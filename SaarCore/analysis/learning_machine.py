@@ -1,5 +1,5 @@
-from analysis.evaluation  import evaluator
-#from analysis.evaluation import parallel_evaluator as evaluator
+#from analysis.evaluation  import evaluator
+from analysis.evaluation import parallel_evaluator as evaluator
 from data.scheme import scheme
 import copy
 from pandas import DataFrame
@@ -42,6 +42,7 @@ class learning_machine(object):
         with open(learning_progres_csv, 'w+') as csvfile:
             writer = csv.DictWriter(csvfile,delimiter=',',fieldnames = columns)
             writer.writeheader()
+            csvfile.flush()
             for sc in self.generate_all_schemes():
                 if sc.name not in scheme_profit.index:
                     e = evaluator(sc,self.from_date,self.to_date)

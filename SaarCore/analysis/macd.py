@@ -18,19 +18,19 @@ class macd(indicator_base):
             assert description.uppers[1] >= description.lowers[1]
             assert description.uppers[2] >= description.lowers[2]
         else:
-            description = indicator_description()
+            description = indicator_description(lambda p : p[1] >= p[0] + 1 and  p[2] * 2 <= p[1])
             #short
-            description.lowers[0] = 6
-            description.uppers[0] = 60
-            description.steps[0] = 1
+            description.lowers[0] = 4
+            description.uppers[0] = 40
+            description.steps[0] = 2
             #long
-            description.lowers[1] = 7
-            description.uppers[1] = 120
-            description.steps[1] = 1
+            description.lowers[1] = 3
+            description.uppers[1] = 80
+            description.steps[1] = 2
             #signal
-            description.lowers[2] = 1
-            description.uppers[2] = 60
-            description.steps[2] = 1
+            description.lowers[2] = 2
+            description.uppers[2] = 40
+            description.steps[2] = 2
             
         if parameter != None:
             assert parameter.params[0] <= parameter.params[1]

@@ -21,7 +21,7 @@ class indicator_parameter(object):
 class indicator_description(object):
     """description of class"""
 
-    def __init__(self):
+    def __init__(self,pred = None):
         self.id = 0
 
         self.name = 'MACD'
@@ -35,6 +35,8 @@ class indicator_description(object):
 
         self.steps = [1] * 9
 
+        self.pred = pred
+
     def generate_all_parameters(self,parameter_numbers):
         
         parameter_list = []
@@ -42,6 +44,7 @@ class indicator_description(object):
             parameter_list.append([x for x in range(self.lowers[i],self.uppers[i],self.steps[i])])
 
         for p in product(*tuple(parameter_list)):
-            yield indicator_parameter(*p)
+            if self.pred == None or self.pred(p):
+                yield indicator_parameter(*p)
 
 
