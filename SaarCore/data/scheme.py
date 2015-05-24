@@ -2,7 +2,7 @@ from data.stock import stock
 from data.indicator import *
 from data import Model
 from sqlalchemy import Table , Column, ForeignKey, Integer, String, Boolean, Float, Date
-from sqlalchemy.orm import relationship, backref
+from sqlalchemy.orm import relationship, backref, reconstructor
 
 import data.evaluation
 from data.learning import learning_progress
@@ -10,9 +10,7 @@ from data.recommendation import recommendation
 
 stock_tracking = Table('stock_tracking',Model.metadata,
     Column('stock_code',String(10),ForeignKey('stock.code')),    
-    Column('scheme_id',Integer,ForeignKey('scheme.id')),
-    Column('buy_date',Date,nullable = False),
-    Column('state',Integer,nullable = False)
+    Column('scheme_id',Integer,ForeignKey('scheme.id'))
 )
 
 class scheme(Model):
@@ -30,6 +28,7 @@ class scheme(Model):
 
     #evaluation    
     stocks_code = relationship(stock,secondary=stock_tracking,backref = backref('stocks_code',lazy = 'dynamic'))
+    start_evaluation = Column(Boolean, nullable=False)
     evaluation_parameters = relationship(indicator_parameter,backref = 'parameter',lazy = 'select')
     evaluation_result = relationship(data.evaluation.evaluation_result, uselist=False)
 
@@ -64,18 +63,43 @@ class scheme(Model):
 
         self.profit_limit = 100000
 
-        self.indicators = []
+        self.__indicators__ = []
 
+        self.start_evaluation = False
         #default values
-        self._stocks = [ stock('SHE:000559'),stock('SHA:601258'),stock('SHA:600876'),stock('SHA:600737'),stock('SHE:000039'),stock('SHE:002405'),stock('SHE:000997'),stock('SHE:002456'),stock('SHE:300168') ]
+        self.stocks_code = [ stock('SHE:000559'),stock('SHA:601258'),stock('SHA:600876'),stock('SHA:600737'),stock('SHE:000039'),stock('SHE:002405'),stock('SHE:000997'),stock('SHE:002456'),stock('SHE:300168') ]
+
+        self.start_learning = False
+        self.learning_done = False
+
+        self.enable_recommendation = False
+
+    @reconstructor
+    def init_on_load(self):    
+        self.__indicators__ = []
+        indicator_module = __import__('analysis')
+        for p in self.evaluation_parameters:
+            klass = getattr(getattr(indicator_module,p.description.id),p.description.id)
+            self.__indicators__.append(klass(p))
+
+    @property
+    def indicators(self):
+        return self.__indicators__
+
+    @indicators.setter
+    def indicators(self,values):
+        self.__indicators__ = values
+        self.evaluation_parameters.clear()
+        for i in values:
+            self.evaluation_parameters.append(i.parameter)
 
     @property
     def stocks(self):
-        return self._stocks
+        return self.stocks_code
 
     @stocks.setter
     def stocks(self,stocks):
-        self._stocks = stocks
+        self.stocks_code = stocks
 
     def append_indicators(self,indicator):
        self.indicators.append(indicator)

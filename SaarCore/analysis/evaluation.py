@@ -143,17 +143,17 @@ class evaluator(object):
 
         if stock.state == stock_state.hold_position and not all:
             sell_num = math.floor(stock.holding_stocks * self.scheme.first_investment_percent)
+            sell_num -= sell_num % 100
             if sell_num < 100:
                 sell_num = stock.holding_stocks
-            stock.holding_stocks -= sell_num
-            stock.money_remains += sell_num * price
         else:
-            stock.money_remains += stock.holding_stocks * price
-            stock.holding_stocks = 0
+            sell_num = stock.holding_stocks
             
+        stock.holding_stocks -= sell_num
+        stock.money_remains += sell_num * price
         stock.last_operate_date = day
         if self.log:
-            print('sells %s (%f) at %s , money remains %d' % (stock.code,price,day,stock.money_remains))
+            print('sells %s (%f * %d) at %s , money remains %d' % (stock.code,price,sell_num,day,stock.money_remains))
 
     def buy(self,stock,day):
         '''invest it and calculate money remains'''
@@ -164,17 +164,18 @@ class evaluator(object):
             invest_money =  stock.money_remains
         else:
             stock.buy_date = day
-            invest_money = self.scheme.first_investment_percent * stock.money_remains
+            invest_money = math.floor(self.scheme.first_investment_percent * stock.money_remains)
             #stock.last_operate_date = day
 
         stock.last_operate_date = day
-        num = math.floor( invest_money / price )
+        num = math.floor( invest_money / price ) 
+        num -= num % 100
         if num < 100:
             return False
         stock.holding_stocks += num
         stock.money_remains -= price * num
         if self.log:
-            print('buys %s (%f) at %s , money remains %d' % (stock.code,price,day,stock.money_remains))
+            print('buys %s (%f * %d) at %s , money remains %d' % (stock.code,price,num,day,stock.money_remains))
         return True
 
     def should_buy_remains(self,stock,day):
@@ -220,8 +221,8 @@ class evaluator(object):
 class parallel_evaluator(evaluator):
     """description of class"""
 
-    def __init__(self, scheme, from_date, to_date):
-        super().__init__(scheme, from_date, to_date)
+    def __init__(self, scheme, from_date, to_date,log = False):
+        super().__init__(scheme, from_date, to_date,log)
         self.counter_lock = threading.Lock()
 
     

@@ -7,6 +7,7 @@ class indicator_base(object):
 
     def __init__(self,parameter,description):
         self.description = description
+        parameter.description = description
         self.parameter = parameter
 
     def precompute(self,stock):

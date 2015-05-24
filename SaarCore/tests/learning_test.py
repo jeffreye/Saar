@@ -12,7 +12,7 @@ class Test_learning(unittest.TestCase):
         super(Test_learning, self).__init__(*args, **kwargs)
         test_scheme = scheme()
         
-        test_scheme.append_indicators(macd(indicator_parameter(10,20,5)))
+        test_scheme.indicators = [ macd(indicator_parameter(10,20,5))]
         self.scheme = test_scheme
 
         self.__stocks__ = [ stock('SHE:000001'),

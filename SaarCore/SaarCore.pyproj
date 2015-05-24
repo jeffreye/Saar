@@ -76,6 +76,9 @@
     <Compile Include="tests\scheme_test.py">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="tests\sql_test.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="tests\stock_test.py">
       <SubType>Code</SubType>
     </Compile>

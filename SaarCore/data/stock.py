@@ -79,13 +79,14 @@ class stock(Model):
     name = Column(String(250),nullable = True)
 
     def __init__(self,code = '000001',name = 'unknown'):
+        import pandas   
         self.code =code
         ''' stock's code '''
 
         self.name = name
         '''stock's name'''
 
-        self.prices = None
+        self.prices = pandas.DataFrame()
         '''storing prices'''
         
         self.thread_local = local()
@@ -93,7 +94,7 @@ class stock(Model):
         
 
     def pull_data(self,from_date,to_date):
-        if self.prices != None and not self.prices.empty and from_date >= self.from_date and to_date <= self.to_date:
+        if not self.prices.empty and from_date >= self.from_date and to_date <= self.to_date:
             return True
 
         try:
