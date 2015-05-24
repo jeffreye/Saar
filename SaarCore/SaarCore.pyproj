@@ -42,16 +42,22 @@
     <Compile Include="analysis\technical_analysis.py">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="data\evaluation.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="data\indicator.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="data\learning.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="data\recommendation.py">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="data\scheme.py">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="data\stock.py">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="data\stock_tracking.py">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="data\__init__.py">
@@ -64,7 +70,16 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="SaarCore.py" />
-    <Compile Include="unit_test.py">
+    <Compile Include="tests\learning_test.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="tests\scheme_test.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="tests\stock_test.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="tests\evaluation_test.py">
       <SubType>Code</SubType>
     </Compile>
   </ItemGroup>
@@ -74,7 +89,7 @@
   <ItemGroup>
     <Folder Include="analysis\" />
     <Folder Include="data\" />
-    <Folder Include="test\" />
+    <Folder Include="tests\" />
   </ItemGroup>
   <PropertyGroup>
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>

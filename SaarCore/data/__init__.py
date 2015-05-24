@@ -1,4 +1,5 @@
-from data.stock import stock
-from data.scheme import scheme
-from data.indicator import indicator_description
-from data.indicator import indicator_parameter 
+from sqlalchemy import Column, ForeignKey, Integer, String
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import relationship
+
+Model = declarative_base()

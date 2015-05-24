@@ -12,10 +12,11 @@ learning_progres_csv = 'learning_progres.csv'
 class learning_machine(object):
     """description of class"""
 
-    def __init__(self,scheme,from_date,to_date,independent_parameter = False):
+    def __init__(self,scheme,from_date,to_date,independent_parameter = False,log = False):
         self.from_date = from_date
         self.to_date = to_date
         self.scheme = scheme
+        self.log = log
 
     def generate_all_schemes(self):
         '''generate scehemes that covers all parameter ranges'''
@@ -49,15 +50,17 @@ class learning_machine(object):
                     scheme_profit.ix[sc.name] = rate,money = e.calculate()
                     writer.writerow({'name':sc.name,'rate':rate,'money':money})
                     csvfile.flush()
-                    print(sc.name + ' - ' + str(money) + ' \t rate = ' + str(rate))
+                    if self.log:
+                        print(sc.name + ' - ' + str(money) + ' \t rate = ' + str(rate))
                 else:
                     writer.writerow({'name':sc.name,'rate':scheme_profit.rate[sc.name],'money':scheme_profit.money[sc.name]})
-                    print(sc.name + ' - ' + str(scheme_profit.money[sc.name]) + ' \t rate = ' + str(scheme_profit.rate[sc.name]))
+                    if self.log:
+                        print(sc.name + ' - ' + str(scheme_profit.money[sc.name]) + ' \t rate = ' + str(scheme_profit.rate[sc.name]))
                     csvfile.flush()
 
         #return 10 solutions
-        scheme_win_rates.sort('')
-        return scheme_win_rates[-10:].to_dict()
+        scheme_profit.sort(['money'],ascending = False)
+        return scheme_profit[:10].to_dict()
 
     def continual_learning(self):
         '''reorder best solution from top 10 solutions'''

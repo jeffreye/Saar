@@ -1,8 +1,17 @@
 from itertools import product
+from data import Model
+from sqlalchemy import Column, ForeignKey, Integer, String, Boolean, Float
+from sqlalchemy.orm import relationship
 
-class indicator_parameter(object):
-   """description of class"""
+class indicator_parameter(Model):
+   """parameter of a indicator"""
+   __tablename__ ='parameter'   
    
+   id = Column(Integer, primary_key=True,autoincrement = True)
+   descption_id = Column(Integer,ForeignKey('description.id'))
+   scheme_id = Column(Integer,ForeignKey('scheme.id'))
+   stock_code = Column(Integer,ForeignKey('stock.code'))
+
    def __init__(self,*args):
        self.indicator_id = 0
 
@@ -18,8 +27,13 @@ class indicator_parameter(object):
            self.params = [0] * 9
 
 
-class indicator_description(object):
-    """description of class"""
+class indicator_description(Model):
+    """description of indicator"""
+    __tablename__ ='description'    
+    
+    id = Column(Integer, primary_key=True,autoincrement = True)
+    scheme_id = Column(Integer,ForeignKey('scheme.id'))
+    stock_code = Column(Integer,ForeignKey('stock.code'))
 
     def __init__(self,pred = None):
         self.id = 0
