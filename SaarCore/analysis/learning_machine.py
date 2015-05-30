@@ -21,7 +21,7 @@ class learning_machine(object):
     def generate_all_schemes(self):
         '''generate scehemes that covers all parameter ranges'''
         for i in self.scheme.indicators:
-            for p in i.description.generate_all_parameters(i.parameter_count):
+            for p in i.description.generate_all_parameters():
                 new_scheme=copy.copy(self.scheme)
                 indicator = copy.copy(i)
                 indicator.parameter = p

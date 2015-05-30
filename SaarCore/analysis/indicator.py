@@ -1,4 +1,4 @@
-from enum import Enum
+from enum import Enum, IntEnum
 import math
 from pandas.tseries.offsets import BDay
 
@@ -21,10 +21,6 @@ class indicator_base(object):
         pass
 
     @property
-    def parameter_count(self):
-        return 0
-
-    @property
     def parameter(self):
         return self._parameter
 
@@ -38,8 +34,27 @@ class indicator_base(object):
 
     
 class indicator_signal(Enum):
-    """description of class"""
-    wait = 0
-    buy = 1
-    sell = 2
+    wait = (0)
+    buy = (1)
+    sell = (2)
+    either = (3)
 
+    def __init__(self, value):
+        self._value_  = value
+
+    @property
+    def can_buy(self):
+        return self.can(indicator_signal.buy)
+
+    @property
+    def can_sell(self):
+        return self.can(indicator_signal.sell)
+
+    def can(self,signal):
+        return self._value_ & signal._value_ == signal._value_
+
+    def __ior__(self,other):
+        return indicator_signal(self._value_ | other._value_)
+
+    def __or__(self,other):
+        return indicator_signal(self._value_ | other._value_)

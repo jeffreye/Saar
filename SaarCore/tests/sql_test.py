@@ -11,7 +11,7 @@ from data import Model
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-engine = create_engine('sqlite:///../voystock.db')
+engine = create_engine('sqlite://')
 Model.metadata.bind = engine
 Model.metadata.create_all(engine)
 
@@ -83,7 +83,29 @@ class Test_sql_test(unittest.TestCase):
         session.commit()
 
         #fake results
-        s.indicators = [macd(indicator_parameter(4,7,2))]
+        s.learning_parameters = [indicator_parameter(4,7,2),indicator_parameter(5,6,7)]
+        s.learning_done = True
+        session.commit()
+
+        #get
+        modified = session.query(scheme).filter(scheme.id == s.id).one()
+        print(str(modified.learning_parameters))
+        self.assertTrue(modified.learning_done == True)
+        self.assertTrue(modified.learning_parameters[2].params[1] == 6)
+
+    def test_recommendation(self):
+        self.skipTest()
+        return       
+        from data.recommendation import recommendation
+        from datetime import date
+
+        s = self.test_add_scheme()
+        #start
+        s.enable_recommendation = True
+        session.commit()
+
+        #fake results
+        s.recommend_stocks = [recommendation(scheme_id = s.id,date = date(2015,5,2),stock_code = "SHA:000001",operation = 1)]
         s.learning_done = True
         session.commit()
 

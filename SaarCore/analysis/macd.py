@@ -18,7 +18,7 @@ class macd(indicator_base):
             assert description.uppers[1] >= description.lowers[1]
             assert description.uppers[2] >= description.lowers[2]
         else:
-            description = indicator_description('macd',lambda p : p[1] >= p[0] + 1 and  p[2] * 2 <= p[1])
+            description = indicator_description('macd',1,lambda p : p[1] >= p[0] + 1 and  p[2] * 2 <= p[1])
             #short
             description.lowers[0] = 2
             description.uppers[0] = 20
@@ -34,6 +34,8 @@ class macd(indicator_base):
             
         if parameter != None:
             assert parameter.params[0] <= parameter.params[1]
+        else:
+            parameter = indicator_parameter(9,25,6)
 
         super(macd,self).__init__(parameter, description)
         

@@ -26,25 +26,25 @@ class Test_evaluator(unittest.TestCase):
                             stock('SHA:600008'),
                             stock('SHA:600068')
                             ]
-        self.end_date = datetime(year = 2015,month = 5, day = 23)
-        self.start_date =  datetime(year = 2015,month = 4,day = 23)
+        test_scheme.evaluation_start = datetime(year = 2015,month = 5, day = 23)
+        test_scheme.evaluation_end =  datetime(year = 2015,month = 4,day = 23)
         self.scheme.stocks = self.__stocks__
             
     def test_evaluator1(self):
-        e = evaluator(self.scheme,self.start_date,self.end_date)
+        e = evaluator(self.scheme)
         rate,money = e.calculate()
         self.assertTrue(0 <= rate <= 1)
         print('Win rate is {0} ,money = {1}'.format(rate,money))
 
     def test_evaluator2(self):
         self.scheme.indicators = [macd(indicator_parameter(9,26,5))]
-        e = evaluator(self.scheme,self.start_date,self.end_date)
+        e = evaluator(self.scheme)
         rate,money  = e.calculate()
         self.assertTrue(0 <= rate <= 1)
         print('Win rate is {0} '.format(rate))
         
     def test_parallel_evaluator(self):
-        e = parallel_evaluator(self.scheme,self.start_date,self.end_date)
+        e = parallel_evaluator(self.scheme)
         rate,money  = e.calculate()
         print('Win rate is {0} '.format(rate))
         

@@ -1,7 +1,5 @@
 from itertools import product
-from data import Model
-from sqlalchemy import Column, ForeignKey, Integer, String, Boolean, Float, Table
-from sqlalchemy.orm import relationship,reconstructor
+from data.sql import *
 
 class indicator_description(Model):
     """description of indicator"""
@@ -11,9 +9,14 @@ class indicator_description(Model):
     id = Column(String(64), primary_key=True)
     #scheme_id = Column(Integer,ForeignKey('scheme.id'))
     #stock_code = Column(Integer,ForeignKey('stock.code'))
+    parameter_count = Column(Integer,nullable = False , default = 0)
+    sell_point = Column(String(20),nullable = False,default = '')
+    buy_point = Column(String(20),nullable = False,default = '')
+    remark = Column(String(20),nullable = False,default = '')
 
-    def __init__(self,klass = 'macd',pred = None):
+    def __init__(self,klass,parameter_count,pred = None):
         self.id = klass
+        self.parameter_count = parameter_count
 
         #self.name = 'MACD'
         #'''indicator's name'''
@@ -41,7 +44,7 @@ class indicator_description(Model):
 
         self.pred = None
 
-    def generate_all_parameters(self,parameter_numbers):
+    def generate_all_parameters(self):
         
         parameter_list = []
         for i in range(parameter_numbers):
@@ -51,6 +54,15 @@ class indicator_description(Model):
             if self.pred == None or self.pred(p):
                 yield indicator_parameter(*p)
 
+    def to_dict(self):
+        return { 
+                    'Name':self.id,
+                    'SupportParameterCount':self.parameter_count,
+                    'BuyPoint':self.buy_point,
+                    'SellPoint':self.sell_point,
+                    'Remark':self.remark
+                }
+
 class indicator_parameter(Model):
    """parameter of a indicator"""
    __tablename__ ='parameter'   
@@ -58,7 +70,7 @@ class indicator_parameter(Model):
    id = Column(Integer, primary_key=True,autoincrement = True)
    descption_id = Column(Integer,ForeignKey('description.id'))
    scheme_id = Column(Integer,ForeignKey('scheme.id'))
-   stock_code = Column(Integer,ForeignKey('stock.code'))
+   stock_code = Column(Integer)
 
    description = relationship(indicator_description,uselist = False)
 
@@ -107,3 +119,12 @@ class indicator_parameter(Model):
            setattr(self,'param' + str(i),0)
        return self.__params__
 
+   def to_dict(self):
+       return {
+                'Name':self.descption_id,
+                'Parameters':self.params
+               }
+
+   def read_dict(self,dict):
+       for index, value in enumerate(dict['Parameters']):
+           self.params[index] = value

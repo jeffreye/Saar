@@ -20,7 +20,6 @@ class ma(indicator_base):
         pass
 
     def get_buy_and_sell_dates(self,stock,from_date,to_date):
-
         pass
 
     def get_signal(self,stock,date):

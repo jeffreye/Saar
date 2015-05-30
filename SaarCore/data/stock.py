@@ -1,8 +1,21 @@
 from datetime import datetime,timedelta
 from threading import Semaphore,local
 import sys
-from data import Model
-from sqlalchemy import Column, ForeignKey, Integer, String
+from data.sql import *
+from enum import IntEnum
+
+
+class stock_state(IntEnum):
+    wait = 0
+
+    open_position = 1
+    '''bought just now'''
+
+    hold_position = 2
+
+    sell_half = 1
+
+    close_position = 0
 
 
 network_pool = Semaphore(value = 1)
@@ -41,7 +54,7 @@ def retrieve_stock(symbol,from_date,to_date):
                     data.rename(columns ={data.columns[0]:'Date'},inplace = True)
                 data.set_index('Date',inplace = True)
                 data.index = pandas.to_datetime(data.index)
-                return data.astype('float')
+                return data[data.Volume != 0]
 
     #Fetch from yahoo finance or google finance
     with network_pool:
@@ -71,6 +84,10 @@ def retrieve_stock(symbol,from_date,to_date):
         prices.to_csv(csv_path,index_label = 'Date')
         return prices
 
+def all_stocks():
+    #TODO
+    pass
+
 class stock(Model):
     """base model of stock"""
     __tablename__ = 'stock'
@@ -90,6 +107,12 @@ class stock(Model):
         '''storing prices'''
         
         self.thread_local = local()
+
+    def to_dict(self):
+        return {
+                    'Code':self.code,
+                    'Name':self.name,
+                }
 
         
 

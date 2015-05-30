@@ -14,6 +14,7 @@
     <RootNamespace>SaarCore</RootNamespace>
     <InterpreterId>{9a7a9026-48c1-4688-9d5d-e5699d47d074}</InterpreterId>
     <InterpreterVersion>3.4</InterpreterVersion>
+    <IsWindowsApplication>False</IsWindowsApplication>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
     <DebugSymbols>true</DebugSymbols>
@@ -24,9 +25,13 @@
     <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="analysis\combination_indicator.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="analysis\indicator.py">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="analysis\kd.py" />
     <Compile Include="analysis\recommendator.py">
       <SubType>Code</SubType>
     </Compile>
@@ -55,6 +60,9 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="data\scheme.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="data\sql.py">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="data\stock.py">
@@ -93,6 +101,9 @@
     <Folder Include="analysis\" />
     <Folder Include="data\" />
     <Folder Include="tests\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="requirements.txt" />
   </ItemGroup>
   <PropertyGroup>
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>

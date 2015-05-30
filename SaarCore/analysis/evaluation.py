@@ -1,40 +1,23 @@
 from analysis.indicator import *
-from enum import Enum
+from enum import IntEnum
 from datetime import *
 from pandas import *
 import math
 import threading
 from analysis.technical_analysis import last_business_day
-
-class stock_state(Enum):
-    wait = 0
-
-    open_position = 1
-    '''bought just now'''
-
-    hold_position = 2
-
-    sell_half = 1
-
-    close_position = 0
-
+from data.stock import stock_state
 
 class evaluator(object):
     """evaluator of scheme"""
 
-    def __init__(self,scheme,from_date,to_date , log = False):
+    def __init__(self,scheme, log = False):
         assert to_date > from_date
         self.scheme = scheme
-        self.from_date = from_date
-        self.to_date = to_date
+        self.from_date = scheme.evaluation_start
+        self.to_date = scheme.evaluation_end
 
         self.prefetch_days = 100
         '''fetech more dates to calculate indicators'''
-
-        
-
-        self.holding_stocks = {}
-        '''key value pair - stock and invest money'''
 
         self.money_remains = {}
         '''money in pocket for every stock'''
@@ -42,8 +25,6 @@ class evaluator(object):
         self.stock_profit_count = {}
 
         self.stock_loss_count = {}
-
-        self.buy_dates = {}
 
         self.indicator = self.scheme.combine_indicators()
 
@@ -84,14 +65,14 @@ class evaluator(object):
             if day not in stock.prices.index:
                 continue
             signal = self.indicator.get_signal(stock,day)
-            if stock.state == stock_state.close_position and signal == indicator_signal.buy :
+            if stock.state == stock_state.close_position and signal.can_buy:
                 #invest it and calculate money remains
                 if self.buy(stock,day):
                     stock.state = stock_state.open_position
-            elif stock.state == stock_state.open_position and ( signal == indicator_signal.buy or self.should_buy_remains(stock,day) ):
+            elif stock.state == stock_state.open_position and ( signal.can_buy or self.should_buy_remains(stock,day) ):
                 if self.buy(stock,day):
                     stock.state = stock_state.hold_position
-            elif stock.state == stock_state.hold_position and ( signal == indicator_signal.sell or self.should_sell(stock,day) ):
+            elif stock.state == stock_state.hold_position and ( signal.can_sell or self.should_sell(stock,day) ):
                 #sell it and money comes back
                 self.sell(stock,day)
 
@@ -105,7 +86,7 @@ class evaluator(object):
                     else:
                         stock_loss_count+=1
                     last_money_remains = stock.money_remains
-            elif stock.state == stock_state.open_position and ( signal == indicator_signal.sell or self.should_sell_remains(stock,day)):
+            elif stock.state == stock_state.open_position and ( signal.can_sell or self.should_sell_remains(stock,day)):
                 #sell remains and all money comes back
                 self.sell(stock,day)
                 stock.state = stock_state.close_position
@@ -159,7 +140,7 @@ class evaluator(object):
         '''invest it and calculate money remains'''
         price = stock.prices.Close[day]
         if stock.money_remains < price:
-            return
+            return False
         elif stock.state == stock_state.open_position or stock.state == stock_state.hold_position:
             invest_money =  stock.money_remains
         else:
@@ -221,8 +202,8 @@ class evaluator(object):
 class parallel_evaluator(evaluator):
     """description of class"""
 
-    def __init__(self, scheme, from_date, to_date,log = False):
-        super().__init__(scheme, from_date, to_date,log)
+    def __init__(self, scheme,log = False):
+        super().__init__(scheme, log)
         self.counter_lock = threading.Lock()
 
     

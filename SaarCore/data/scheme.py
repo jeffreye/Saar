@@ -1,8 +1,8 @@
+from datetime import date
 from data.stock import stock
 from data.indicator import *
-from data import Model
-from sqlalchemy import Table , Column, ForeignKey, Integer, String, Boolean, Float, Date
-from sqlalchemy.orm import relationship, backref, reconstructor
+from data.sql import *
+from analysis.combination_indicator import *
 
 import data.evaluation
 from data.learning import learning_progress
@@ -18,17 +18,25 @@ class scheme(Model):
     __tablename__ = 'scheme'
 
     id = Column(Integer, primary_key=True,autoincrement = True)
-    name = Column(String(250), nullable=False)
+    name = Column(String(250), nullable=False, unique = True)
+    
+    total_money = Column(Float(4), nullable=False,default = 20000)
+    first_investment_percent = Column(Float(2), nullable=False,default = 0.5)
+    additional_investment_condition = Column(Float(2), nullable=False,default = 0.02)
+    first_sell_percent = Column(Float(2), nullable=False,default = 0.5)
+    additional_sell_condition = Column(Float(2), nullable=False,default = 0.02)
+    holding_cycles = Column(Integer, nullable=False,default = 10000)
+    loss_limit = Column(Float(2), nullable=False,default = 0.07)
+    profit_limit = Column(Float(2), nullable=False,default = 100000)
 
-    first_investment_percent = Column(Float(2), nullable=False)
-    additional_investment_condition = Column(Float(2), nullable=False)
-    holding_cycles = Column(Integer, nullable=False)
-    loss_limit = Column(Float(2), nullable=False)
-    profit_limit = Column(Float(2), nullable=False)
+    tolerant_days = Column(Integer, nullable=False,default = 5)
+    indicator_combinator = Column(Integer,nullable = False,default = 1 )
 
     #evaluation    
     stocks_code = relationship(stock,secondary=stock_tracking,backref = backref('stocks_code',lazy = 'dynamic'))
     start_evaluation = Column(Boolean, nullable=False)
+    evaluation_start = Column(Date, nullable=False,default =  date(2005,6,6))
+    evaluation_end = Column(Date, nullable=False,default =  date(2013,6,27))
     evaluation_parameters = relationship(indicator_parameter,backref = 'parameter',lazy = 'select')
     evaluation_result = relationship(data.evaluation.evaluation_result, uselist=False)
 
@@ -39,17 +47,18 @@ class scheme(Model):
     
     #recommendation
     enable_recommendation = Column(Boolean, nullable=False)
-    recommend_stocks = relationship(recommendation,backref ='learning_parameters',lazy = 'dynamic')
+    recommend_stocks = relationship(recommendation,collection_class = attribute_mapped_collection('stock_code'),backref ='learning_parameters',lazy = 'dynamic')
 
 
     def __init__(self,name = 'analysis scheme'):
+
+        #self.id = 123
+
         self.name = name
         '''Name'''
 
         self.learned = False
         '''whether it learned best parameters or not'''
-
-        self.continual_learning = True
 
         self.total_money = 20000
 
@@ -66,6 +75,9 @@ class scheme(Model):
         self.__indicators__ = []
 
         self.start_evaluation = False
+        self.evaluation_start = date(2005,6,6)
+        self.evaluation_end = date(2013,6,27)
+
         #default values
         self.stocks_code = [ stock('SHE:000559'),stock('SHA:601258'),stock('SHA:600876'),stock('SHA:600737'),stock('SHE:000039'),stock('SHE:002405'),stock('SHE:000997'),stock('SHE:002456'),stock('SHE:300168') ]
 
@@ -77,13 +89,14 @@ class scheme(Model):
     @reconstructor
     def init_on_load(self):    
         self.__indicators__ = []
-        indicator_module = __import__('analysis')
-        for p in self.evaluation_parameters:
-            klass = getattr(getattr(indicator_module,p.description.id),p.description.id)
-            self.__indicators__.append(klass(p))
 
     @property
     def indicators(self):
+        if len(self.__indicators__) != len(self.evaluation_parameters):
+            self.__indicators__.clear()
+            for p in self.evaluation_parameters:
+                klass = getattr(getattr(__import__('analysis'),p.description.id),p.description.id)
+                self.__indicators__.append(klass(p))
         return self.__indicators__
 
     @indicators.setter
@@ -101,14 +114,70 @@ class scheme(Model):
     def stocks(self,stocks):
         self.stocks_code = stocks
 
-    def append_indicators(self,indicator):
-       self.indicators.append(indicator)
-
     def combine_indicators(self):
        if len(self.indicators) == 1:
            return self.indicators[0]
-       else:#TODO
-           return None
+       elif self.indicator_combinator == combination_type.parallel:
+           return parallel_indicator(self.indicators)
+       elif self.indicator_combinator == combination_type.series:
+           return series_indicator(self.indicators,self.tolerant_days)
+       else: #default
+           return parallel_indicator(self.indicators)
+       #TODO add more combine
+
+    def read_dict(self,dict):
+        self.name = dict['Name']
+        self.first_investment_percent = dict['FirstInvestmentPercent']
+        self.additional_investment_condition = dict['AdditionalInvestmentCondition']
+        self.holding_cycles = dict['HoldingCycles']
+        self.loss_limit = dict['LossLimit']
+        self.profit_limit = dict['ProfitLimit']
+        self.tolerant_days = dict['TolerantDays']
+        self.indicator_combinator = dict['CombinationType']
+
+        self.start_evaluation = dict['StartEvaluation']
+        import dateutil.parser
+        self.evaluation_start = dateutil.parser.parse(dict['EvaluationStartTime']).date()
+        self.evaluation_end = dateutil.parser.parse(dict['EvaluationEndTime']).date()
+        indicator_parameters = {}
+        for p in dict['EvaluationIndicators']:
+            indicator_parameters[p['Name']] = p
+        for p in self.evaluation_parameters:
+            p.read_dict(indicator_parameters[p.description_id])
+
+        self.stocks_code = [ stock(x['Code'],x['Name']) for x in dict['EvaluationStocks']]
+            
+        self.start_learning = dict['StartLearning']
+        self.learning_done = dict['LearningDone']
+
+        self.enable_recommendation = dict['EnableRecommendation']
+
+    def to_dict(self):
+        return {
+                'ID':self.id,
+                'Name':self.name,
+                'FirstInvestmentPercent':self.first_investment_percent,
+                'AdditionalInvestmentCondition':self.additional_investment_condition,
+                'FirstSellPercent':self.first_sell_percent,
+                'AdditionalSellCondition':self.additional_sell_condition,
+                'HoldingCycles':self.holding_cycles,
+                'LossLimit':self.loss_limit,
+                'ProfitLimit':self.profit_limit,
+                'TolerantDays':self.tolerant_days,
+                'CombinationType':self.indicator_combinator,
+
+                'StartEvaluation':self.start_evaluation,
+                'EvaluationStartTime':self.evaluation_start.isoformat(),
+                'EvaluationEndTime':self.evaluation_end.isoformat(),
+                'EvaluationIndicators':[p.to_dict() for p in self.evaluation_parameters],
+                'EvaluationStocks':[p.to_dict() for p in self.stocks_code],
+
+                'StartLearning':self.start_learning,
+                'LearningDone':self.learning_done,
+                'LearningIndicators':[p.to_dict() for p in self.learning_parameters],
+
+                'EnableRecommendation':self.enable_recommendation,
+                }
 
     def __str__(self):
         return self.name

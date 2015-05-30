@@ -21,6 +21,9 @@ def sma(stock,date,n):
     assert stock.prices.Close.size >= n
     return sum( [float(x) for x in stock.prices.Close] ) / n
 
+def rsv(stock,span):
+    return (stock.prices.Close - pandas.rolling_min(stock.prices.Low,window = span))/(pandas.rolling_max(stock.prices.High,window = span) - pandas.rolling_min(stock.prices.Low,window = span)) * 100
+
 def ewma(data,span):
     #return pandas.ewma(data,span = span,adjust = False)
 
