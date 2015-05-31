@@ -33,5 +33,9 @@ class Test_stock_test(unittest.TestCase):
             self.assertTrue(isfile(csvfile),s.code + '\'s data cannot be fetched.')
             remove(csvfile)
 
+    def test_all_stocks_list(self):
+        results = all_stocks()
+        self.assertTrue(len(results)!=0)
+
 if __name__ == '__main__':
     unittest.main()

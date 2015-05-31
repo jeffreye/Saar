@@ -21,7 +21,7 @@ network_pool = Semaphore(value = 1)
 local_file_pool = Semaphore(value = 1)
 historical_price_directory = 'hist'
 csv_ext = '.csv'
-google_historical_price_page = 'https://www.google.com/finance/historical?q={0}&startdate={1}&enddate={2}&num=200&start={3}';
+google_historical_price_page = 'http://www.google.com/finance/historical?q={0}&startdate={1}&enddate={2}&num=200&start={3}';
 
 def get_csv_path(symbol):
     from os.path import join
@@ -78,21 +78,12 @@ def retrieve_stock(symbol,from_date,to_date):
                     data = data.ix[1:]
                     data.index = pandas.to_datetime(data.index)
                     prices = prices.append(data.astype('float'))
-
+                    
         #save to local
         
         prices = prices[prices.Volume != 0]
         prices.to_csv(csv_path,index_label = 'Date')
         return prices
-
-all_stock_json_link = 'www.google.com.hk/finance?start=0&num=4000&q=%5B((exchange%20%3D%3D%20"SHE")%20%7C%20(exchange%20%3D%3D%20"SHA"))%5D&restype=company&output=json&gl=cn'
-
-def all_stocks():
-    import pandas   
-    j = pandas.read_json(all_stock_json_link)
-    for r in j['searchresults']:
-        yield stock('%s:%s' % (r['exchange'],r['ticker']),r['title'])
-
 class stock(Model):
     """base model of stock"""
     __tablename__ = 'stock'
@@ -154,20 +145,28 @@ class stock(Model):
             self.thread_local._indicator_values = {}
         return self.thread_local._indicator_values
 
+
+
+all_stock_json_link = 'http://www.google.com.hk/finance?start=0&num=4000&q=%5B((exchange%20%3D%3D%20"SHE")%20%7C%20(exchange%20%3D%3D%20"SHA"))%5D&restype=company&output=json&gl=cn'
+
 def retrieve_stock_list():
     '''get all tickers from market'''
     
     china_stocks.clear()
-    import pandas   
-    j = pandas.read_json(all_stock_json_link)
+    from urllib.request import urlopen
+    import json
+    raw = urlopen(all_stock_json_link).readall().decode('utf-8')
+    valid_json = raw.replace('\n"original_query" : "[((exchange == \\x22SHE\\x22) | (exchange == \\x22SHA\\x22))]",\n"query_for_display" : "[((exchange == &quot;SHE&quot;) | (exchange == &quot;SHA&quot;))]",','').replace('\\x26','&')
+    
+    j = json.loads(valid_json)
     for r in j['searchresults']:
         china_stocks.append( stock('%s:%s' % (r['exchange'],r['ticker']),r['title']) )
-
-    pass
     
-
-def get_china_stocks_codes():
-    return [ stock('SHE%3A' + sym) for sym in stock.shenzheng_stocks_codes] + [ stock('SHA%3A' + sym) for sym in stock.shanghai_stocks_codes]
+def all_stocks():
+    if len(china_stocks) == 0:
+        retrieve_stock_list()
+    return china_stocks
+        
 
 china_stocks = []
 
