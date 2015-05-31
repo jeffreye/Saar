@@ -10,6 +10,8 @@ Core of market analysis
   * html5lib
 * Flask-API
 
+pip install -r requirements.txt
+
 # IDE
 * VisualStudio
   * Python Tools for Visual Studio

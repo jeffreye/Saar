@@ -1,0 +1,9 @@
+pandas
+lxml
+numpy
+beautifulsoup4
+html5lib
+SQLAlchemy
+flask
+Flask-SQLAlchemy
+Flask-API
