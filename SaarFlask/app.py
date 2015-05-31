@@ -58,8 +58,7 @@ def open_file(filename):
     if sys.platform == "win32":
         os.startfile(filename)
     else:
-        opener ="source"
-        subprocess.call([opener, filename])
+        os.system('./%s&'%filename)
 
 @requires_auth
 @app.route('/update', methods=['GET'])
