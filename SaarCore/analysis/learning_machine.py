@@ -58,7 +58,7 @@ class learning_machine(object):
                         print(sc.name + ' - ' + str(scheme_profit.money[sc.name]) + ' \t rate = ' + str(scheme_profit.rate[sc.name]))
                     csvfile.flush()
 
-        #return 10 solutions
+        #TODO:write into scheme
         scheme_profit.sort(['money'],ascending = False)
         return scheme_profit[:10].to_dict()
 

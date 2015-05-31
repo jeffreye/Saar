@@ -1,5 +1,5 @@
 from data.scheme import scheme
-from data.stock import stock
+from data.stock import *
 from data.indicator import indicator_parameter
 from analysis import *
 from datetime import datetime, timedelta
@@ -23,7 +23,10 @@ def analyse(scheme_id):
     Collect stock data and analyse them.(This always run after market is closed)
     This is core of recemmendation module.
     '''
-    from analysis.recommendator import recommendator
+    from analysis.recommendator import recommendator, today
+    if today().weekday() >= 5:
+        print('today is not business day')
+        return
     sc = session.query(scheme).filter(scheme.id == scheme_id).first()
     if sc == None:
         return
@@ -48,8 +51,10 @@ def search_best_parameters(scheme_id):
     sc = session.query(scheme).filter(scheme.id == scheme_id).first()
     if sc == None:
         return
-    e = learning_machine(test_scheme)
+    session.expunge(sc)
+    e = learning_machine(sc)
     results = e.calculate_top_10_solutions()
+    session.merge(sc)
     session.commit()
     
 
@@ -110,4 +115,4 @@ if __name__ == '__main__':
     except:
         print('fucking error %s' % sys.exc_info()[1])
     else:
-        print('done')
+        print('done ' + sys.argv[1])

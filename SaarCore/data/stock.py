@@ -156,7 +156,8 @@ def retrieve_stock_list():
     from urllib.request import urlopen
     import json
     raw = urlopen(all_stock_json_link).readall().decode('utf-8')
-    valid_json = raw.replace('\n"original_query" : "[((exchange == \\x22SHE\\x22) | (exchange == \\x22SHA\\x22))]",\n"query_for_display" : "[((exchange == &quot;SHE&quot;) | (exchange == &quot;SHA&quot;))]",','').replace('\\x26','&')
+    #valid_json = raw.replace('\n"original_query" : "[((exchange == \\x22SHE\\x22) | (exchange == \\x22SHA\\x22))]",\n"query_for_display" : "[((exchange == &quot;SHE&quot;) | (exchange == &quot;SHA&quot;))]",','').replace('\\x26','&')
+    valid_json = raw.replace('\\x22','').replace('\\x26','&')
     
     j = json.loads(valid_json)
     for r in j['searchresults']:

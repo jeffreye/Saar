@@ -2,6 +2,7 @@ from analysis.indicator import *
 from data.stock import all_stocks, stock_state
 from data.recommendation import *
 from datetime import *
+import threading
 
 class recommendator(object):
     """recommendator of stocks"""
@@ -14,9 +15,16 @@ class recommendator(object):
 
     def get_daliy_stocks(self, date = today()):
         '''recommend stocks base on user's scheme'''
+
+        threads = []
         for s in all_stocks():
-            if self.manipulate_stock(s,date):
-                yield s
+            t = threading.Thread(target = self.manipulate_stock, args = (s,date), name = 'manipulate ' + s.code)
+            t.start()
+            threads.append(t)
+           
+        for i,t in enumerate(threads):
+            t.join()
+            
             
     def manipulate_stock(self,stock,day):
         '''Determine stock should be operated'''

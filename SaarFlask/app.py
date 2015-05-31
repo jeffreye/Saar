@@ -2,18 +2,21 @@
 This script runs the application using a development server.
 It contains the definition of routes and views for the application.
 """
-core_base_dir = '../SaarCore/'
+core_base_dir = 'SaarCore'
 core_file = 'SaarCore.py'
 py_proc = 'python %s %s %s'
+
 from pathlib import Path
+import os
+
+proj_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 def get_start_file(operation,scheme_id):
-    return py_proc % (Path(os.path.dirname(os.getcwd()),'SaarCore',core_file),operation,scheme_id)
+    return py_proc % (Path(proj_dir,core_base_dir,core_file),operation,scheme_id)
 
 import sys
-sys.path.append(core_base_dir)
+sys.path.append(str(Path(proj_dir,core_base_dir))+ os.sep)
 
-import os
 import subprocess
 from flask import Flask,request, Response
 from auth import requires_auth
@@ -50,6 +53,20 @@ def init():
     except:
         import sys
         return str(sys.exc_info()[1])
+    
+@requires_auth
+@app.route('/update', methods=['GET'])
+def shutdown():
+    shutdown_server()
+    os.startfile(str(Path(proj_dir,'reboot.sh')))
+    return 'Server shutting down...'
+
+def shutdown_server():
+    func = request.environ.get('werkzeug.server.shutdown')
+    if func is None:
+        print('Not running with the Werkzeug Server')
+    else:
+        func()
 
 @requires_auth
 @app.route('/')

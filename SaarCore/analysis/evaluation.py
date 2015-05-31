@@ -36,6 +36,7 @@ class evaluator(object):
     def calculate(self):
         '''calculate scheme's win rate'''
         #buy and sell simulatively(range:all stocks)
+        self.scheme.start_evaluation = True
         
         self.scheme.evaluation_result = evaluation_result(scheme_id = self.scheme.id,progress = 0,money = 0,win_rate = 0)
         with open('evaluation%s.csv' % self.scheme.name, 'w+') as self.csvfile:
@@ -53,6 +54,7 @@ class evaluator(object):
         self.scheme.evaluation_result.progress = 1
         self.scheme.evaluation_result.money = sum(self.money_remains.values())
         self.scheme.evaluation_result.win_rate = profit_rate
+        self.scheme.start_evaluation = False
 
         return profit_rate,sum(self.money_remains.values())
 
@@ -226,7 +228,7 @@ class parallel_evaluator(evaluator):
     def calculate(self):
         '''calculate scheme's win rate'''
         #buy and sell simulatively(range:all stocks)
-        
+        self.scheme.start_evaluation = True
         threads = []
 
         for stock in self.scheme.stocks:
@@ -247,6 +249,7 @@ class parallel_evaluator(evaluator):
         self.scheme.evaluation_result.progress = 1
         self.scheme.evaluation_result.money = sum(self.money_remains.values())
         self.scheme.evaluation_result.win_rate = profit_rate
+        self.scheme.start_evaluation = False
 
         return profit_rate,sum(self.money_remains.values())
 
