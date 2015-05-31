@@ -1,2 +1,7 @@
+DIRECTORY=$(cd `dirname $0` && pwd)
+echo $DIRECTORY
+cd $DIRECTORY
+
 git fetch
-python SaarFlask/app.py
+python $DIRECTORY/SaarFlask/app.py
+read 

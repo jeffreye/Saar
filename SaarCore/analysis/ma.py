@@ -11,6 +11,9 @@ class ma(indicator_base):
     ma4 = 'MA*4'
 
     def __init__(self,parameter,description):
+            
+        if parameter == None:
+            parameter = indicator_parameter(20)
         if description == None:
             description = parameter.description
 
@@ -26,9 +29,6 @@ class ma(indicator_base):
             description.lowers[0] = 1
             description.uppers[0] = 100
             description.steps[0] = 1
-            
-        if parameter == None:
-            parameter = indicator_parameter(20)
 
         super(ma,self).__init__(parameter, description)
 

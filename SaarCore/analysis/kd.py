@@ -12,7 +12,9 @@ class kd(indicator_base):
     k_mark = 'k'
     d_mark = 'd'
 
-    def __init__(self,parameter = None,description = None):        
+    def __init__(self,parameter = None,description = None):                  
+        if parameter == None:
+            parameter = indicator_parameter(9,3,3)  
         if description == None:
             description = parameter.description
 
@@ -36,9 +38,6 @@ class kd(indicator_base):
             description.lowers[2] = 1
             description.uppers[2] = 15
             description.steps[2] = 2
-            
-        if parameter == None:
-            parameter = indicator_parameter(9,3,3)
 
         super(kd,self).__init__(parameter, description)
         

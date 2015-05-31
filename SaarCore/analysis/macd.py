@@ -13,6 +13,12 @@ class macd(indicator_base):
     dif = 'MACD_DIF'
 
     def __init__(self,parameter = None,description = None):
+            
+        if parameter != None:
+            assert parameter.params[0] <= parameter.params[1]
+        else:
+            parameter = indicator_parameter(9,25,6)
+
         if description == None:
             description = parameter.description
 
@@ -36,11 +42,6 @@ class macd(indicator_base):
             description.lowers[2] = 2
             description.uppers[2] = 10
             description.steps[2] = 1
-            
-        if parameter != None:
-            assert parameter.params[0] <= parameter.params[1]
-        else:
-            parameter = indicator_parameter(9,25,6)
 
         super(macd,self).__init__(parameter, description)
         

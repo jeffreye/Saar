@@ -15,6 +15,7 @@ def get_start_file(operation,scheme_id):
     return py_proc % (Path(proj_dir,core_base_dir,core_file),operation,scheme_id)
 
 import sys
+print(proj_dir)
 sys.path.append(str(Path(proj_dir,core_base_dir))+ os.sep)
 
 import subprocess
