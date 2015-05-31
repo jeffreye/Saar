@@ -6,12 +6,14 @@ import math
 import threading
 from analysis.technical_analysis import last_business_day
 from data.stock import stock_state
+import csv
+from data.evaluation import evaluation_result
 
 class evaluator(object):
     """evaluator of scheme"""
 
     def __init__(self,scheme, log = False):
-        assert to_date > from_date
+        assert scheme.evaluation_end > scheme.evaluation_start
         self.scheme = scheme
         self.from_date = scheme.evaluation_start
         self.to_date = scheme.evaluation_end
@@ -35,19 +37,29 @@ class evaluator(object):
         '''calculate scheme's win rate'''
         #buy and sell simulatively(range:all stocks)
         
-
-        for stock in self.scheme.stocks:
-            self.stock_profit_count[stock], self.stock_loss_count[stock],self.money_remains[stock] = self.manipulate_stock(stock)
+        self.scheme.evaluation_result = evaluation_result(scheme_id = self.scheme.id,progress = 0,money = 0,win_rate = 0)
+        with open('evaluation%s.csv' % self.scheme.name, 'w+') as self.csvfile:
+            self.writer = csv.DictWriter(self.csvfile,delimiter=',',fieldnames = ['date','operation','code','price','numbers','money_remains'])
+            self.writer.writeheader()
+            self.csvfile.flush()
+            for i,stock in enumerate(self.scheme.stocks):
+                self.stock_profit_count[stock], self.stock_loss_count[stock],self.money_remains[stock] = self.manipulate_stock(stock)
+                self.scheme.evaluation_result.progress = i/len(self.scheme.stocks)
            
         profits = sum(self.stock_profit_count.values())
         losses = sum(self.stock_loss_count.values())
         profit_rate = 0 if (profits + losses) == 0 else profits / (profits + losses)
+
+        self.scheme.evaluation_result.progress = 1
+        self.scheme.evaluation_result.money = sum(self.money_remains.values())
+        self.scheme.evaluation_result.win_rate = profit_rate
+
         return profit_rate,sum(self.money_remains.values())
 
     def manipulate_stock(self,stock):
         #prepare data
         if not stock.pull_data(self.from_date - timedelta(days = self.prefetch_days),self.to_date):
-            return 0,0
+            return 0,0,0
         
         last_money_remains = self.scheme.total_money
         stock.money_remains = last_money_remains
@@ -135,6 +147,8 @@ class evaluator(object):
         stock.last_operate_date = day
         if self.log:
             print('sells %s (%f * %d) at %s , money remains %d' % (stock.code,price,sell_num,day,stock.money_remains))
+            self.writer.writerow({'date':day.isoformat(),'operation':'sell','code':stock.code,'price':price,'numbers':sell_num,'money_remains':stock.money_remains})
+            self.csvfile.flush()
 
     def buy(self,stock,day):
         '''invest it and calculate money remains'''
@@ -157,6 +171,8 @@ class evaluator(object):
         stock.money_remains -= price * num
         if self.log:
             print('buys %s (%f * %d) at %s , money remains %d' % (stock.code,price,num,day,stock.money_remains))
+            self.writer.writerow({'date':day.isoformat(),'operation':'buy','code':stock.code,'price':price,'numbers':num,'money_remains':stock.money_remains})
+            self.csvfile.flush()
         return True
 
     def should_buy_remains(self,stock,day):
@@ -218,12 +234,20 @@ class parallel_evaluator(evaluator):
             t.start()
             threads.append(t)
            
-        for t in threads:
+        self.scheme.evaluation_result = evaluation_result(scheme_id = self.scheme.id,progress = 0,money = 0,win_rate = 0)
+        for i,t in enumerate(threads):
             t.join()
+            self.scheme.evaluation_result.progress = i/len(threads)
 
         profits = sum(self.stock_profit_count.values())
         losses = sum(self.stock_loss_count.values())
         profit_rate = 0 if (profits + losses) == 0 else profits / (profits + losses)
+
+        
+        self.scheme.evaluation_result.progress = 1
+        self.scheme.evaluation_result.money = sum(self.money_remains.values())
+        self.scheme.evaluation_result.win_rate = profit_rate
+
         return profit_rate,sum(self.money_remains.values())
 
     def _manipulate_stock_threading(self, stock):

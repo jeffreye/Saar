@@ -1,18 +1,16 @@
-from analysis.learning_machine import learning_machine
 from data.scheme import scheme
-from analysis import *
-from datetime import datetime
-from pandas.tseries.offsets import BDay
 from data.stock import stock
 from data.indicator import indicator_parameter
-from analysis.evaluation import evaluator,parallel_evaluator
+from analysis import *
+from datetime import datetime, timedelta
+from pandas.tseries.offsets import *
 from data import Model
-from data.evaluation import evaluation_result
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-engine = create_engine('sqlite:///../voystock.db')
+import os
+engine = create_engine('sqlite:///%s/../voystock.db' % os.getcwd())
 Model.metadata.bind = engine
 Model.metadata.create_all(engine)
 
@@ -20,52 +18,96 @@ DBSession = sessionmaker()
 DBSession.bind = engine
 session = DBSession()
 
-def recollect_and_analyse_stocks():
+def analyse(scheme_id):
     '''
     Collect stock data and analyse them.(This always run after market is closed)
     This is core of recemmendation module.
     '''
-    for sc in session.query(scheme).all():
-        pass
-
-def evaluate_scheme(scheme_id):
+    from analysis.recommendator import recommendator
     sc = session.query(scheme).filter(scheme.id == scheme_id).first()
     if sc == None:
         return
-    e = parallel_evaluator(test_scheme)
-    rate,money = e.calculate()
+    r = recommendator(sc)
+    for s in r.get_daliy_stocks():
+        pass
+    session.commit()
 
-    sc.evaluation_result = evaluation_result(scheme_id = scheme_id,progress = 1, money = money,win_rate = rate)
+def evaluate_scheme(scheme_id):
+    from analysis.evaluation import evaluator,parallel_evaluator
+    sc = session.query(scheme).filter(scheme.id == scheme_id).first()
+    if sc == None:
+        return
+    #session.expunge(sc)
+    e = parallel_evaluator(sc)
+    rate,money = e.calculate()
+    #session.merge(sc)
     session.commit()
 
 def search_best_parameters(scheme_id):
+    from analysis.learning_machine import learning_machine
     sc = session.query(scheme).filter(scheme.id == scheme_id).first()
     if sc == None:
         return
-    #e = learning_machine(test_scheme,datetime(year = 2005,month = 6,day = 6),datetime(year = 2013,month = 6, day = 27),log = True)
-    #results = e.calculate_top_10_solutions()  
+    e = learning_machine(test_scheme)
+    results = e.calculate_top_10_solutions()
+    session.commit()
+    
+
+def test():
+    test_scheme = scheme()
+    test_scheme.loss_limit = 100
+    test_scheme.indicators = [kd(indicator_parameter(9,1,15))]
+    test_scheme.stocks = [
+                        stock('SHA:600750'),
+                        #stock('SHA:000012'),
+                        #stock('SHA:600188'),
+                        #stock('SHA:600219'),
+                        #stock('SHA:600249'),
+                        #stock('SHA:600718'),
+                        #stock('SHA:600118'),
+                        #stock('SHA:601928'),
+                        #stock('SHA:603000'),
+                        #stock('SHA:601688'),
+                        #stock('SHA:603000'),
+                        #stock('SHA:601988'),
+                        #stock('SHA:600519'),
+                        #stock('SHA:600795'),
+                        #stock('SHE:000898'),
+                        #stock('SHE:000792'),
+                        #stock('SHE:000963'),
+                        #stock('SHE:000401'),
+                        #stock('SHE:000100'),
+                        #stock('SHE:000536'),
+                        ]
+    test_scheme.evaluation_start = datetime(year = 2005,month = 6,day = 6)
+    test_scheme.evaluation_end = datetime(year = 2012,month = 6, day = 27)
+        
+    #from analysis.learning_machine import learning_machine
+    #e = learning_machine(test_scheme,log = True)
+    #results = e.calculate_top_10_solutions()        
+    #for name,money in results.items():
+    #    print(name + ' - ' + str(money))
+                        
+    #e = evaluator(test_scheme,log = True)
+    #rate,money = e.calculate()
+    #print('Win rate is {0} ,money = {1}'.format(rate,money))
 
 
-def recommend_stocks():
-    pass
 
 if __name__ == '__main__':
-    def learn_kd():
-        test_scheme = scheme()
-        test_scheme.indicators = [kd(indicator_parameter(9,3,3))]
-        test_scheme.stocks = [
-
-                            stock('SHA:600150'),
-                            ]
-
-        #e = learning_machine(test_scheme,datetime(year = 2005,month = 6,day = 6),datetime(year = 2013,month = 6, day = 27),log = True)
-        #results = e.calculate_top_10_solutions()        
-        #for name,money in results.items():
-        #    print(name + ' - ' + str(money))
-        
-        e = parallel_evaluator(test_scheme,datetime(year = 2005,month = 6,day = 6),datetime(year = 2013,month = 6, day = 27),log = True)
-        rate,money = e.calculate()
-        print('Win rate is {0} ,money = {1}'.format(rate,money))
-
-
-    learn_kd()
+    print('working at ' + os.getcwd())
+    import sys
+    try:
+        scheme_id = int(sys.argv[2])
+        if sys.argv[1] =='recommendation':
+            analyse(scheme_id)
+        elif sys.argv[1] == 'learning':
+            search_best_parameters(scheme_id)
+        elif sys.argv[1] == 'evaluation':
+            evaluate_scheme(scheme_id)
+        else:
+            test()
+    except:
+        print('fucking error %s' % sys.exc_info()[1])
+    else:
+        print('done')

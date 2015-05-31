@@ -1,22 +1,22 @@
-#from analysis.evaluation  import evaluator
-from analysis.evaluation import parallel_evaluator as evaluator
 from data.scheme import scheme
 import copy
 from pandas import DataFrame
 from pandas import read_csv
 from os.path import isfile
 import csv
+from analysis.evaluation import parallel_evaluator as evaluator
 
 learning_progres_csv = 'learning_progres.csv'
 
 class learning_machine(object):
     """description of class"""
 
-    def __init__(self,scheme,from_date,to_date,independent_parameter = False,log = False):
-        self.from_date = from_date
-        self.to_date = to_date
+    def __init__(self,scheme,independent_parameter = False,log = False):
+        assert len(scheme.indicators) > 0
         self.scheme = scheme
         self.log = log
+        if len(self.scheme.indicators) > 1:
+            print('Multiple indicators\' scheme may cause some problems')
 
     def generate_all_schemes(self):
         '''generate scehemes that covers all parameter ranges'''
@@ -46,7 +46,7 @@ class learning_machine(object):
             csvfile.flush()
             for sc in self.generate_all_schemes():
                 if sc.name not in scheme_profit.index:
-                    e = evaluator(sc,self.from_date,self.to_date)
+                    e = evaluator(sc)
                     scheme_profit.ix[sc.name] = rate,money = e.calculate()
                     writer.writerow({'name':sc.name,'rate':rate,'money':money})
                     csvfile.flush()

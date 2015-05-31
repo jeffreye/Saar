@@ -10,11 +10,12 @@ class indicator_description(Model):
     #scheme_id = Column(Integer,ForeignKey('scheme.id'))
     #stock_code = Column(Integer,ForeignKey('stock.code'))
     parameter_count = Column(Integer,nullable = False , default = 0)
+    constraint_function = Column(String(100))
     sell_point = Column(String(20),nullable = False,default = '')
     buy_point = Column(String(20),nullable = False,default = '')
     remark = Column(String(20),nullable = False,default = '')
 
-    def __init__(self,klass,parameter_count,pred = None):
+    def __init__(self,klass,parameter_count,func_str = None):
         self.id = klass
         self.parameter_count = parameter_count
 
@@ -29,7 +30,12 @@ class indicator_description(Model):
 
         self.steps = [1] * 9
 
-        self.pred = pred
+        self.constraint_function = func_str
+        
+        if self.constraint_function != None:
+            self.pred = eval(self.constraint_function)
+        else:
+            self.pred = None
 
 
     @reconstructor
@@ -41,14 +47,17 @@ class indicator_description(Model):
         self.lowers = [-1000000] * 9
 
         self.steps = [1] * 9
-
-        self.pred = None
+        
+        if self.constraint_function != None:
+            self.pred = eval(self.constraint_function)
+        else:
+            self.pred = None
 
     def generate_all_parameters(self):
         
         parameter_list = []
-        for i in range(parameter_numbers):
-            parameter_list.append([x for x in range(self.lowers[i],self.uppers[i],self.steps[i])])
+        for i in range(self.parameter_count):
+            parameter_list.append([x for x in range(self.lowers[i],self.uppers[i]+1,self.steps[i])])
 
         for p in product(*tuple(parameter_list)):
             if self.pred == None or self.pred(p):

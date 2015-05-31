@@ -17,17 +17,19 @@ def clamp(my_value, min_value, max_value):
     assert max_value >= result >= min_value
     return result
 
-def sma(stock,date,n):
-    assert stock.prices.Close.size >= n
-    return sum( [float(x) for x in stock.prices.Close] ) / n
+def sma(data,n):
+    n = int(n)
+    return pandas.rolling_mean(data,window = n)
 
 def rsv(stock,span):
+    span = int(span)
     return (stock.prices.Close - pandas.rolling_min(stock.prices.Low,window = span))/(pandas.rolling_max(stock.prices.High,window = span) - pandas.rolling_min(stock.prices.Low,window = span)) * 100
 
 def ewma(data,span):
     #return pandas.ewma(data,span = span,adjust = False)
 
     results = pandas.Series()
+    span = int(span)
 
     criterion = data.map(lambda x: not np.isnan(x))
     data = data[criterion]

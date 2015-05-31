@@ -30,7 +30,7 @@ class indicator_base(object):
 
 
     def __str__(self):
-        return self.__class__.__name__ + str(tuple(self.parameter.params[:self.parameter_count]))
+        return self.__class__.__name__ + str(tuple(self.parameter.params[:self.description.parameter_count]))
 
     
 class indicator_signal(Enum):

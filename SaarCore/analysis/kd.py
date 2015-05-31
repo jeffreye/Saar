@@ -1,4 +1,4 @@
-from data.stock import stock
+﻿from data.stock import stock
 from analysis.indicator import *
 from data.indicator import *
 from datetime import *
@@ -12,13 +12,18 @@ class kd(indicator_base):
     k_mark = 'k'
     d_mark = 'd'
 
-    def __init__(self,parameter = None,description = None):
+    def __init__(self,parameter = None,description = None):        
+        if description == None:
+            description = parameter.description
+
         if description != None:
             assert description.uppers[0] >= description.lowers[0]
             assert description.uppers[1] >= description.lowers[1]
             assert description.uppers[2] >= description.lowers[2]
         else:
-            description = indicator_description('kd',lambda p:p[0] in [9,19,34,55,89])
+            description = indicator_description('KD',3,'lambda p:p[0] in [9,19,34,55,89]')
+            description.buy_point = u'出现金叉且K<=20且D<=20'
+            description.sell_point = u'出现死叉'
             #n
             description.lowers[0] = 1
             description.uppers[0] = 100
@@ -46,7 +51,7 @@ class kd(indicator_base):
         self._parameter = parameter
         if parameter != None:
             self.n =   clamp(parameter.params[0],self.description.lowers[0],self.description.uppers[0])
-            self.m1 =    clamp(parameter.params[1],self.description.lowers[1],self.description.uppers[1])
+            self.m1 =  clamp(parameter.params[1],self.description.lowers[1],self.description.uppers[1])
             self.m2 =  clamp(parameter.params[2],self.description.lowers[2],self.description.uppers[2])
 
         
@@ -87,7 +92,8 @@ class kd(indicator_base):
 
         if cross_type == cross.golden or ( current_k <= 20 and current_d <= 20):
             return indicator_signal.buy
-        elif cross_type == cross.dead or ( current_k >= 80 and current_d >= 80):
+        #elif cross_type == cross.dead or ( current_k >= 80 and current_d >= 80):
+        elif cross_type == cross.dead:
             return indicator_signal.sell
         else:
             return indicator_signal.wait

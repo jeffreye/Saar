@@ -33,21 +33,23 @@ class scheme(Model):
     indicator_combinator = Column(Integer,nullable = False,default = 1 )
 
     #evaluation    
-    stocks_code = relationship(stock,secondary=stock_tracking,backref = backref('stocks_code',lazy = 'dynamic'))
+    stocks_code = relationship(stock,secondary=stock_tracking,backref ='stocks_code', lazy='joined')
     start_evaluation = Column(Boolean, nullable=False)
     evaluation_start = Column(Date, nullable=False,default =  date(2005,6,6))
     evaluation_end = Column(Date, nullable=False,default =  date(2013,6,27))
-    evaluation_parameters = relationship(indicator_parameter,backref = 'parameter',lazy = 'select')
-    evaluation_result = relationship(data.evaluation.evaluation_result, uselist=False)
+    evaluation_parameters = relationship(indicator_parameter,backref = 'parameter', lazy='joined')
+    evaluation_result = relationship(data.evaluation.evaluation_result, uselist=False, lazy='joined',cascade="save-update, merge, delete, delete-orphan")
 
     #learning
     start_learning = Column(Boolean, nullable=False)
     learning_done = Column(Boolean,nullable = False)
-    learning_parameters = relationship(indicator_parameter,secondary=learning_progress,backref = backref('learning_parameters',lazy = 'dynamic'))
+    learning_parameters = relationship(indicator_parameter,secondary=learning_progress,backref = backref('learning_parameters', lazy='joined'))
     
     #recommendation
     enable_recommendation = Column(Boolean, nullable=False)
-    recommend_stocks = relationship(recommendation,collection_class = attribute_mapped_collection('stock_code'),backref ='learning_parameters',lazy = 'dynamic')
+    recommend_stocks = relationship(recommendation,
+                                    collection_class = attribute_mapped_collection('stock_code'),
+                                    cascade="all, delete-orphan")
 
 
     def __init__(self,name = 'analysis scheme'):
@@ -86,6 +88,8 @@ class scheme(Model):
 
         self.enable_recommendation = False
 
+        self.recommend_stocks = {}
+
     @reconstructor
     def init_on_load(self):    
         self.__indicators__ = []
@@ -95,7 +99,8 @@ class scheme(Model):
         if len(self.__indicators__) != len(self.evaluation_parameters):
             self.__indicators__.clear()
             for p in self.evaluation_parameters:
-                klass = getattr(getattr(__import__('analysis'),p.description.id),p.description.id)
+                #klass = getattr(getattr(__import__('analysis'),p.description.id.lower()),p.description.id.lower())
+                klass = getattr(__import__('analysis'),p.description.id.lower())
                 self.__indicators__.append(klass(p))
         return self.__indicators__
 

@@ -1,6 +1,5 @@
 from datetime import datetime,timedelta
 from threading import Semaphore,local
-import sys
 from data.sql import *
 from enum import IntEnum
 
@@ -72,21 +71,27 @@ def retrieve_stock(symbol,from_date,to_date):
                     data = raw[-1]
                     if len(data.keys()) >= 6:
                         data.rename(columns = { 0:'Date',1:'Open' ,2: 'High', 3:  'Low',4:  'Close',5:'Volume'},inplace = True)
-                        data = data[data.Volume != '0']
                     else:
                         data.rename(columns = { 0:'Date',1:'Close'},inplace = True)
+                    data = data[data.Volume != '-']
                     data.set_index('Date',inplace = True)
                     data = data.ix[1:]
                     data.index = pandas.to_datetime(data.index)
                     prices = prices.append(data.astype('float'))
 
         #save to local
+        
+        prices = prices[prices.Volume != 0]
         prices.to_csv(csv_path,index_label = 'Date')
         return prices
 
+all_stock_json_link = 'www.google.com.hk/finance?start=0&num=4000&q=%5B((exchange%20%3D%3D%20"SHE")%20%7C%20(exchange%20%3D%3D%20"SHA"))%5D&restype=company&output=json&gl=cn'
+
 def all_stocks():
-    #TODO
-    pass
+    import pandas   
+    j = pandas.read_json(all_stock_json_link)
+    for r in j['searchresults']:
+        yield stock('%s:%s' % (r['exchange'],r['ticker']),r['title'])
 
 class stock(Model):
     """base model of stock"""
@@ -107,6 +112,14 @@ class stock(Model):
         '''storing prices'''
         
         self.thread_local = local()
+        
+    @reconstructor
+    def init_on_load(self):    
+        import pandas   
+        self.prices = pandas.DataFrame()
+        '''storing prices'''
+        
+        self.thread_local = local()
 
     def to_dict(self):
         return {
@@ -114,6 +127,8 @@ class stock(Model):
                     'Name':self.name,
                 }
 
+    def __repr__(self):
+        return '<stock code=%s name=%s>' % (self.code,self.name)
         
 
     def pull_data(self,from_date,to_date):
@@ -122,8 +137,9 @@ class stock(Model):
 
         try:
             self.prices = retrieve_stock(self.code,from_date,to_date)
-        except:
-            print("Unexpected error when retrieving stocks:"+ str(sys.exc_info()[1]))
+        except:            
+            import sys
+            print("Unexpected error ( %s ) when retrieving stocks:%s" % (str(sys.exc_info()[1]),self.code))
             return False
         else:
             self.prices.sort(inplace = True)
@@ -140,38 +156,20 @@ class stock(Model):
 
 def retrieve_stock_list():
     '''get all tickers from market'''
-
-    end_date =  datetime.now()
-    start_date = end_date - timedelta(days=8)
-        
-    #Shangzheng Market
-    stock.shanghai_stocks_codes = []
-    for x in range(0,999999):
-        sym = '{0:0=6}'.format(x) # 000050
-        try:
-            df = retrieve_stock(sym,start_date,end_date,1)
-        except IOError:
-            pass
-        else:
-            shanghai_stocks_codes.append(sym)
-
-            
-    #ShenZheng Market
-    stock.shenzheng_stocks_codes = []
-    for x in range(0,999999):
-        sym = '{0:0=6}'.format(x) # 000050
-        try:
-            df = retrieve_stock(sym,start_date,end_date,1)
-        except IOError:
-            pass
-        else:
-            shenzheng_stocks_codes.append(sym)
+    
+    china_stocks.clear()
+    import pandas   
+    j = pandas.read_json(all_stock_json_link)
+    for r in j['searchresults']:
+        china_stocks.append( stock('%s:%s' % (r['exchange'],r['ticker']),r['title']) )
 
     pass
     
 
 def get_china_stocks_codes():
     return [ stock('SHE%3A' + sym) for sym in stock.shenzheng_stocks_codes] + [ stock('SHA%3A' + sym) for sym in stock.shanghai_stocks_codes]
+
+china_stocks = []
 
 '''SHA SHE MUTF_CN '''
 

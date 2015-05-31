@@ -1,4 +1,4 @@
-from data.stock import stock
+﻿from data.stock import stock
 from analysis.indicator import *
 from data.indicator import *
 from datetime import *
@@ -13,12 +13,17 @@ class macd(indicator_base):
     dif = 'MACD_DIF'
 
     def __init__(self,parameter = None,description = None):
+        if description == None:
+            description = parameter.description
+
         if description != None:
             assert description.uppers[0] >= description.lowers[0]
             assert description.uppers[1] >= description.lowers[1]
             assert description.uppers[2] >= description.lowers[2]
         else:
-            description = indicator_description('macd',1,lambda p : p[1] >= p[0] + 1 and  p[2] * 2 <= p[1])
+            description = indicator_description('MACD',3,'lambda p : p[1] >= p[0] + 1 and  p[2] * 2 <= p[1]')
+            description.buy_point = u'金叉'
+            description.sell_point = u'死叉'
             #short
             description.lowers[0] = 2
             description.uppers[0] = 20
@@ -50,10 +55,6 @@ class macd(indicator_base):
             self.short =   clamp(parameter.params[0],self.description.lowers[0],self.description.uppers[0])
             self.long =    clamp(parameter.params[1],self.description.lowers[1],self.description.uppers[1])
             self.signal =  clamp(parameter.params[2],self.description.lowers[2],self.description.uppers[2])
-
-    @property
-    def parameter_count(self):
-        return 3
         
     def precompute(self,stock):
         assert stock.prices.index.size > 0,'{0}\'s prices is empty'.format(stock.code)

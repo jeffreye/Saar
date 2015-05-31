@@ -3,14 +3,18 @@ This script runs the application using a development server.
 It contains the definition of routes and views for the application.
 """
 core_base_dir = '../SaarCore/'
-core_file = 'Saar.py '
-py_proc = 'python.exe'
+core_file = 'SaarCore.py'
+py_proc = 'python %s %s %s'
+from pathlib import Path
+
+def get_start_file(operation,scheme_id):
+    return py_proc % (Path(os.path.dirname(os.getcwd()),'SaarCore',core_file),operation,scheme_id)
 
 import sys
 sys.path.append(core_base_dir)
 
 import os
-from pathlib import Path
+import subprocess
 from flask import Flask,request, Response
 from auth import requires_auth
 from datetime import date
@@ -22,7 +26,6 @@ from flask.ext.api import FlaskAPI, status, exceptions
 
 app = FlaskAPI(__name__) # Browsable Web APIs for Flask
 #app = Flask(__name__)
-
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///../voystock.db'
 app.url_map.converters['datetime'] = DateConverter
 
@@ -38,7 +41,10 @@ def init():
     try:
         Model.metadata.drop_all(db.engine)
         Model.metadata.create_all(db.engine)
-        db.session.add(scheme())
+        from analysis import kd
+        s = scheme()
+        s.indicators = [kd()]
+        db.session.add(s)
         db.session.commit()
         return 'Welcome to voystock'
     except:
@@ -61,6 +67,13 @@ def get_indicators():
                     'Name':'MACD',
                     'SupportParameterCount':3,
                     'BuyPoint':u'出现金叉',
+                    'SellPoint':u'出现死叉',
+                    'Remark':u'哦'
+                 },
+                { 
+                    'Name':'KD',
+                    'SupportParameterCount':3,
+                    'BuyPoint':u'出现金叉且K<=20且D<=20',
                     'SellPoint':u'出现死叉',
                     'Remark':u'哦'
                  },
@@ -114,21 +127,25 @@ def evaluate(id):
 
     if request.method == 'GET':
         '''get evaluation results'''
-        return {
+        if s.evaluation_result == None:
+            return 'null'
+        else:
+            principal = s.total_money * len(s.stocks_code)
+            return {
                 'Progress':s.evaluation_result.progress,
-                'AnnualizedReturn': (s.evaluation_result.money - s.total_money * len(s.stocks_code)) / (( s.evaluation_end - s.evaluation_start ).days / 365),
+                'AnnualizedReturn': (s.evaluation_result.money - principal )/principal / (( s.evaluation_end - s.evaluation_start ).days / 365),
                 'WinRate':s.evaluation_result.win_rate
                 }
     elif request.method == 'PUT':
         '''start evaluation and run proc'''
-        #TODO:run proc
-        pass
+        subprocess.Popen(get_start_file('evaluation',id),shell = True)
     elif request.method == 'DELETE':
         '''stop evaluation'''
         s.start_evaluation = False
         db.session.commit()
     else:
         raise exceptions.NotFound()
+    return 'True'
 
 
 @requires_auth
@@ -149,14 +166,14 @@ def learn(id):
                 }
     elif request.method == 'PUT':
         '''start learning and run proc'''
-        #TODO:run proc
-        pass
+        subprocess.Popen(get_start_file('learning',id))
     elif request.method == 'DELETE':
         '''stop learning'''
         s.start_learning = False
         db.session.commit()
     else:
         raise exceptions.NotFound()
+    return 'True'
 
 
 @requires_auth
@@ -172,15 +189,14 @@ def recommend(id):
         return [ r.to_dict() for r in s.recommend_stocks ]
     elif request.method == 'PUT':
         '''start recommendation'''
-        #TODO:run proc
-        os.startfile(py_proc + str(Path(core_base_dir,core_file) + ' recommend='+id))
-        pass
+        subprocess.Popen(get_start_file('recommendation',id))
     elif request.method == 'DELETE':
         '''stop recommendation'''
         s.enable_recommendation = False
         db.session.commit()
     else:
         raise exceptions.NotFound()
+    return 'True'
     
 @requires_auth
 @app.route('/recommendation/<string:id>/<string:stock>',methods = ['GET'])
@@ -201,7 +217,7 @@ def get_recommendation_on_date(id,date):
     s = db.session.query(scheme).filter_by(id = id).first()    
     if s == None:
         return 'null'
-    return [ r.to_dict() for r in s.recommend_stocks if r.date == date ]
+    return [ r.to_dict() for r in s.recommend_stocks if r.recommendation_operation_date == date ]
 
 
 if __name__ == '__main__':

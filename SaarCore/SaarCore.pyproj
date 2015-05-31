@@ -78,6 +78,7 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="SaarCore.py" />
+    <Compile Include="tests\recommendation_test.py" />
     <Compile Include="tests\learning_test.py">
       <SubType>Code</SubType>
     </Compile>
