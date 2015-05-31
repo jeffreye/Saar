@@ -52,15 +52,25 @@ def init():
         db.session.commit()
         return 'Welcome to voystock'
     except:
-        import sys
         return str(sys.exc_info()[1])
     
+def open_file(filename):
+    if sys.platform == "win32":
+        os.startfile(filename)
+    else:
+        opener ="open" if sys.platform == "darwin" else "xdg-open"
+        subprocess.call([opener, filename])
+
 @requires_auth
 @app.route('/update', methods=['GET'])
 def shutdown():
     shutdown_server()
-    os.startfile(str(Path(proj_dir,'reboot.sh')))
-    return 'Server shutting down...'
+    try:
+        filename = str(Path(proj_dir,'reboot.sh'))
+        open_file(filename)
+        return 'Server shutting down...\nOpening '+ filename
+    except:
+        return str(sys.exc_info()[1])
 
 def shutdown_server():
     func = request.environ.get('werkzeug.server.shutdown')
