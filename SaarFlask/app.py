@@ -65,9 +65,9 @@ def open_file(filename):
 def shutdown():
     shutdown_server()
     try:
-        filename = str(Path(proj_dir,'reboot.sh'))
-        open_file(filename)
-        return 'Server shutting down...\nOpening '+ filename
+        os.chdir(proj_dir)
+        open_file('reboot.sh')
+        return 'Server rebooting...'
     except:
         return str(sys.exc_info()[1])
 
@@ -144,6 +144,8 @@ def get_all_scheme():
     return [ s.to_dict() for s in db.session.query(scheme)]
 
 
+def start_action(operation,id):
+    subprocess.Popen(['python',str(Path(proj_dir,core_base_dir,core_file)),operation,str(id)])
 
 @requires_auth
 @app.route('/evaluation/<string:id>',methods = ['GET','PUT','DELTE'])
@@ -165,7 +167,7 @@ def evaluate(id):
                 }
     elif request.method == 'PUT':
         '''start evaluation and run proc'''
-        subprocess.Popen(get_start_file('evaluation',id),shell = True)
+        start_action('evaluation',id)
     elif request.method == 'DELETE':
         '''stop evaluation'''
         s.start_evaluation = False
@@ -193,7 +195,7 @@ def learn(id):
                 }
     elif request.method == 'PUT':
         '''start learning and run proc'''
-        subprocess.Popen(get_start_file('learning',id))
+        start_action('learning',id)
     elif request.method == 'DELETE':
         '''stop learning'''
         s.start_learning = False
@@ -216,7 +218,7 @@ def recommend(id):
         return [ r.to_dict() for r in s.recommend_stocks ]
     elif request.method == 'PUT':
         '''start recommendation'''
-        subprocess.Popen(get_start_file('recommendation',id))
+        start_action('recommendation',id)
     elif request.method == 'DELETE':
         '''stop recommendation'''
         s.enable_recommendation = False
