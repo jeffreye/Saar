@@ -145,6 +145,7 @@ def get_all_scheme():
 
 
 def start_action(operation,id):
+    db.session.close()
     subprocess.Popen(['python',str(Path(proj_dir,core_base_dir,core_file)),operation,str(id)])
 
 @requires_auth
