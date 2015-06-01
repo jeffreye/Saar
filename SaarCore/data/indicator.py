@@ -81,7 +81,7 @@ class indicator_parameter(Model):
    scheme_id = Column(Integer,ForeignKey('scheme.id'))
    stock_code = Column(Integer)
 
-   description = relationship(indicator_description,uselist = False)
+   description = relationship(indicator_description,uselist = False, lazy='joined')
 
    param0 = Column(Float(2))
    param1 = Column(Float(2))

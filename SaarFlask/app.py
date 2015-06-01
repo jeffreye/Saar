@@ -18,7 +18,6 @@ import sys
 print(proj_dir)
 sys.path.append(str(Path(proj_dir,core_base_dir))+ os.sep)
 
-import subprocess
 from flask import Flask,request, Response
 from auth import requires_auth
 from datetime import date
@@ -34,6 +33,8 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///../voystock.db'
 app.url_map.converters['datetime'] = DateConverter
 
 db = SQLAlchemy(app)
+
+import actions
 
 # Make the WSGI interface available at the top level so wfastcgi can get it.
 wsgi_app = app.wsgi_app
@@ -152,9 +153,10 @@ def get_all_scheme():
     return [ s.to_dict() for s in db.session.query(scheme)]
 
 
-def start_action(operation,id):
-    db.session.remove()
-    subprocess.Popen(['python',str(Path(proj_dir,core_base_dir,core_file)),operation,str(id)])
+def start_action(operation,scheme):
+    db.session.expunge(scheme)
+    from threading import Thread
+    Thread(target = operation,args = (scheme,)).start()
 
 @requires_auth
 @app.route('/evaluation/<string:id>',methods = ['GET','PUT','DELTE'])
@@ -177,7 +179,7 @@ def evaluate(id):
                     }
         elif request.method == 'PUT':
             '''start evaluation and run proc'''
-            start_action('evaluation',id)
+            start_action(actions.evaluate_scheme,s)
         elif request.method == 'DELETE':
             '''stop evaluation'''
             s.start_evaluation = False
@@ -208,7 +210,7 @@ def learn(id):
                     }
         elif request.method == 'PUT':
             '''start learning and run proc'''
-            start_action('learning',id)
+            start_action(actions.search_best_parameters,s)
         elif request.method == 'DELETE':
             '''stop learning'''
             s.start_learning = False
@@ -234,7 +236,7 @@ def recommend(id):
             return [ r.to_dict() for r in s.recommend_stocks ]
         elif request.method == 'PUT':
             '''start recommendation'''
-            start_action('recommendation',id)
+            start_action(actions.analyse,s)
         elif request.method == 'DELETE':
             '''stop recommendation'''
             s.enable_recommendation = False

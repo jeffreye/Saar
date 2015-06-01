@@ -15,8 +15,7 @@ engine = create_engine('sqlite:///%s/../voystock.db' % os.getcwd())
 Model.metadata.bind = engine
 Model.metadata.create_all(engine)
 
-DBSession = scoped_session(sessionmaker())
-DBSession.bind = engine
+DBSession = scoped_session(sessionmaker(bind = engine))
 session = DBSession()
 
 def analyse(scheme_id):
