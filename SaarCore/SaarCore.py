@@ -27,7 +27,7 @@ def analyse(scheme_id):
     if today().weekday() >= 5:
         print('today is not business day')
         return
-    sc = session.query(scheme).filter_by(id == scheme_id).first()
+    sc = session.query(scheme).filter_by(id = scheme_id).first()
     if sc == None:
         raise NameError('scheme %s is not found.' % scheme_id)
     r = recommendator(sc)
@@ -37,7 +37,7 @@ def analyse(scheme_id):
 
 def evaluate_scheme(scheme_id):
     from analysis.evaluation import evaluator,parallel_evaluator
-    sc = session.query(scheme).filter_by(id == scheme_id).first()
+    sc = session.query(scheme).filter_by(id = scheme_id).first()
     if sc == None:
         raise NameError('scheme %s is not found.' % scheme_id)
     #session.expunge(sc)
@@ -48,7 +48,7 @@ def evaluate_scheme(scheme_id):
 
 def search_best_parameters(scheme_id):
     from analysis.learning_machine import learning_machine
-    sc = session.query(scheme).filter_by(id == scheme_id).first()
+    sc = session.query(scheme).filter_by(id = scheme_id).first()
     if sc == None:
         raise NameError('scheme %s is not found.' % scheme_id)
     session.expunge(sc)
