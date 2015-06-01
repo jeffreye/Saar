@@ -29,7 +29,7 @@ def analyse(scheme_id):
         return
     sc = session.query(scheme).filter(scheme.id == scheme_id).first()
     if sc == None:
-        return
+        raise NameError('scheme %s is not found.' % scheme_id)
     r = recommendator(sc)
     for s in r.get_daliy_stocks():
         pass
@@ -39,7 +39,7 @@ def evaluate_scheme(scheme_id):
     from analysis.evaluation import evaluator,parallel_evaluator
     sc = session.query(scheme).filter(scheme.id == scheme_id).first()
     if sc == None:
-        return
+        raise NameError('scheme %s is not found.' % scheme_id)
     #session.expunge(sc)
     e = parallel_evaluator(sc)
     rate,money = e.calculate()
@@ -50,7 +50,7 @@ def search_best_parameters(scheme_id):
     from analysis.learning_machine import learning_machine
     sc = session.query(scheme).filter(scheme.id == scheme_id).first()
     if sc == None:
-        return
+        raise NameError('scheme %s is not found.' % scheme_id)
     session.expunge(sc)
     e = learning_machine(sc)
     results = e.calculate_top_10_solutions()
