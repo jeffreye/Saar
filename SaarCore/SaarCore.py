@@ -8,13 +8,14 @@ from data import Model
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm.scoping import scoped_session
 
 import os
 engine = create_engine('sqlite:///%s/../voystock.db' % os.getcwd())
 Model.metadata.bind = engine
 Model.metadata.create_all(engine)
 
-DBSession = sessionmaker()
+DBSession = scoped_session(sessionmaker())
 DBSession.bind = engine
 session = DBSession()
 

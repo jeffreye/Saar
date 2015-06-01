@@ -53,6 +53,8 @@ def init():
         return 'Welcome to voystock'
     except:
         return str(sys.exc_info()[1])
+    finally:
+        db.session.remove()
     
 def open_file(filename):
     if sys.platform == "win32":
@@ -111,31 +113,37 @@ def get_indicators():
 @app.route('/scheme/',methods = ['POST','GET' ])
 def modify_scheme():
     '''Create a new scheme or update it'''
-    if request.method == 'GET':
-        return 'hello'
-    schemeData = request.data
-    s = db.session.query(scheme).filter_by(id = schemeData['ID']).first()
-    if s == None:
-        s = scheme()
-        db.session.add(s)
+    try:
+        if request.method == 'GET':
+            return 'hello'
+        schemeData = request.data
+        s = db.session.query(scheme).filter_by(id = schemeData['ID']).first()
+        if s == None:
+            s = scheme()
+            db.session.add(s)
 
-    s.read_dict(schemeData)
-    db.session.commit()
-    return str(s.id)
+        s.read_dict(schemeData)
+        db.session.commit()
+        return str(s.id)
+    finally:
+        db.session.remove()
 
 @requires_auth
 @app.route('/scheme/<string:id>',methods = ['GET' ,'DELETE'])
 def get_scheme(id):
     '''get a scheme values or delete it'''
-    s = db.session.query(scheme).filter_by(id = id).first()
-    if request.method == 'GET':
-        if s == None:
-            return 'null'
-        else:
-            return s.to_dict()
-    elif request.method == 'DELETE':
-        db.session.delete(s)
-        db.session.commit()
+    try:
+        s = db.session.query(scheme).filter_by(id = id).first()
+        if request.method == 'GET':
+            if s == None:
+                return 'null'
+            else:
+                return s.to_dict()
+        elif request.method == 'DELETE':
+            db.session.delete(s)
+            db.session.commit()
+    finally:
+        db.session.remove()
 
 @requires_auth
 @app.route('/scheme_all',methods = ['GET'])
@@ -145,109 +153,126 @@ def get_all_scheme():
 
 
 def start_action(operation,id):
-    db.session.close()
+    db.session.remove()
     subprocess.Popen(['python',str(Path(proj_dir,core_base_dir,core_file)),operation,str(id)])
 
 @requires_auth
 @app.route('/evaluation/<string:id>',methods = ['GET','PUT','DELTE'])
 def evaluate(id):
-    s = db.session.query(scheme).filter_by(id = id).first()    
-    if s == None:
-        return 'null'
-
-    if request.method == 'GET':
-        '''get evaluation results'''
-        if s.evaluation_result == None:
+    try:    
+        s = db.session.query(scheme).filter_by(id = id).first()    
+        if s == None:
             return 'null'
+
+        if request.method == 'GET':
+            '''get evaluation results'''
+            if s.evaluation_result == None:
+                return 'null'
+            else:
+                principal = s.total_money * len(s.stocks_code)
+                return {
+                    'Progress':s.evaluation_result.progress,
+                    'AnnualizedReturn': (s.evaluation_result.money - principal )/principal / (( s.evaluation_end - s.evaluation_start ).days / 365),
+                    'WinRate':s.evaluation_result.win_rate
+                    }
+        elif request.method == 'PUT':
+            '''start evaluation and run proc'''
+            start_action('evaluation',id)
+        elif request.method == 'DELETE':
+            '''stop evaluation'''
+            s.start_evaluation = False
+            db.session.commit()
         else:
-            principal = s.total_money * len(s.stocks_code)
-            return {
-                'Progress':s.evaluation_result.progress,
-                'AnnualizedReturn': (s.evaluation_result.money - principal )/principal / (( s.evaluation_end - s.evaluation_start ).days / 365),
-                'WinRate':s.evaluation_result.win_rate
-                }
-    elif request.method == 'PUT':
-        '''start evaluation and run proc'''
-        start_action('evaluation',id)
-    elif request.method == 'DELETE':
-        '''stop evaluation'''
-        s.start_evaluation = False
-        db.session.commit()
-    else:
-        raise exceptions.NotFound()
-    return 'True'
+            raise exceptions.NotFound()
+        return 'True'
+    finally:
+        db.session.remove()
 
 
 @requires_auth
 @app.route('/learning/<string:id>',methods =['GET','PUT','DELTE'])
 def learn(id):
     '''start learning(run proc) or stop it'''
-    s = db.session.query(scheme).filter_by(id = id).first()    
-    if s == None:
-        return 'null'
+    try:    
+        s = db.session.query(scheme).filter_by(id = id).first()    
+        if s == None:
+            return 'null'
 
-    if request.method == 'GET':
-        '''get learning results'''
-        return { 'LearningDone' :s.learning_done,
-                 'BestParameters': [ 
-                                     {'Name':p.description.id ,'Parameters':p.params}
-                                     for p in s.learning_parameters
-                                    ]
-                }
-    elif request.method == 'PUT':
-        '''start learning and run proc'''
-        start_action('learning',id)
-    elif request.method == 'DELETE':
-        '''stop learning'''
-        s.start_learning = False
-        db.session.commit()
-    else:
-        raise exceptions.NotFound()
-    return 'True'
+        if request.method == 'GET':
+            '''get learning results'''
+            return { 'LearningDone' :s.learning_done,
+                     'BestParameters': [ 
+                                         {'Name':p.description.id ,'Parameters':p.params}
+                                         for p in s.learning_parameters
+                                        ]
+                    }
+        elif request.method == 'PUT':
+            '''start learning and run proc'''
+            start_action('learning',id)
+        elif request.method == 'DELETE':
+            '''stop learning'''
+            s.start_learning = False
+            db.session.commit()
+        else:
+            raise exceptions.NotFound()
+        return 'True'
 
+    finally:
+        db.session.remove()
 
 @requires_auth
 @app.route('/recommendation/<string:id>',methods = ['GET','PUT','DELTE'])
 def recommend(id):
     '''Recommend stocks'''
-    s = db.session.query(scheme).filter_by(id = id).first()    
-    if s == None:
-        return 'null'
+    try:
+        s = db.session.query(scheme).filter_by(id = id).first()    
+        if s == None:
+            return 'null'
         
-    if request.method == 'GET':
-        '''get recommendation results'''
-        return [ r.to_dict() for r in s.recommend_stocks ]
-    elif request.method == 'PUT':
-        '''start recommendation'''
-        start_action('recommendation',id)
-    elif request.method == 'DELETE':
-        '''stop recommendation'''
-        s.enable_recommendation = False
-        db.session.commit()
-    else:
-        raise exceptions.NotFound()
-    return 'True'
+        if request.method == 'GET':
+            '''get recommendation results'''
+            return [ r.to_dict() for r in s.recommend_stocks ]
+        elif request.method == 'PUT':
+            '''start recommendation'''
+            start_action('recommendation',id)
+        elif request.method == 'DELETE':
+            '''stop recommendation'''
+            s.enable_recommendation = False
+            db.session.commit()
+        else:
+            raise exceptions.NotFound()
+        return 'True'
+
+    finally:
+        db.session.remove()
     
 @requires_auth
 @app.route('/recommendation/<string:id>/<string:stock>',methods = ['GET'])
 def perform_recommendation_operation(id,stock):
-    """track a stock"""
-    s = db.session.query(scheme).filter_by(id = id).first()    
-    if s == None:
-        return 'null'
-    state = s.recommend_stocks[stock].perform_operation()
-    if state == stock_state.close_position:
-        del s.recommend_stocks[stock]
-    db.session.commit()
+    """track a stock"""    
+    try:
+        s = db.session.query(scheme).filter_by(id = id).first()    
+        if s == None:
+            return 'null'
+        state = s.recommend_stocks[stock].perform_operation()
+        if state == stock_state.close_position:
+            del s.recommend_stocks[stock]
+        db.session.commit()
+
+    finally:
+        db.session.remove()
 
 @requires_auth
 @app.route('/recommendation/<string:id>/<datetime:date>',methods = ['GET'])
 def get_recommendation_on_date(id,date):
     """get recommend stocks on specified date"""
-    s = db.session.query(scheme).filter_by(id = id).first()    
-    if s == None:
-        return 'null'
-    return [ r.to_dict() for r in s.recommend_stocks if r.recommendation_operation_date == date ]
+    try:
+        s = db.session.query(scheme).filter_by(id = id).first()    
+        if s == None:
+            return 'null'
+        return [ r.to_dict() for r in s.recommend_stocks if r.recommendation_operation_date == date ]
+    finally:
+        db.session.remove()
 
 
 if __name__ == '__main__':
