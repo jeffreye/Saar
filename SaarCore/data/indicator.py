@@ -77,7 +77,7 @@ class indicator_parameter(Model):
    __tablename__ ='parameter'   
    
    id = Column(Integer, primary_key=True,autoincrement = True)
-   descption_id = Column(Integer,ForeignKey('description.id'))
+   description_id = Column(Integer,ForeignKey('description.id'))
    scheme_id = Column(Integer,ForeignKey('scheme.id'))
    stock_code = Column(Integer)
 
@@ -130,7 +130,7 @@ class indicator_parameter(Model):
 
    def to_dict(self):
        return {
-                'Name':self.descption_id,
+                'Name':self.description_id,
                 'Parameters':self.params
                }
 

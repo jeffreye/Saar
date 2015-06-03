@@ -134,6 +134,8 @@ class scheme(Model):
         self.name = dict['Name']
         self.first_investment_percent = dict['FirstInvestmentPercent']
         self.additional_investment_condition = dict['AdditionalInvestmentCondition']
+        self.first_sell_percent = dict['FirstSellPercent']
+        self.additional_sell_condition = dict['AdditionalSellCondition']
         self.holding_cycles = dict['HoldingCycles']
         self.loss_limit = dict['LossLimit']
         self.profit_limit = dict['ProfitLimit']

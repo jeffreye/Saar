@@ -53,7 +53,8 @@ def init():
         db.session.commit()
         return 'Welcome to voystock'
     except:
-        return str(sys.exc_info()[1])
+        import traceback
+        return traceback.format_exc()
     finally:
         db.session.remove()
     
@@ -72,7 +73,8 @@ def shutdown():
         open_file('reboot.sh')
         return 'Server rebooting...'
     except:
-        return str(sys.exc_info()[1])
+        import traceback
+        return traceback.format_exc()
 
 def shutdown_server():
     func = request.environ.get('werkzeug.server.shutdown')
@@ -122,10 +124,14 @@ def modify_scheme():
         if s == None:
             s = scheme()
             db.session.add(s)
-
+        db.session.expunge(s)
         s.read_dict(schemeData)
+        db.session.merge(s)
         db.session.commit()
         return str(s.id)
+    except:
+        import traceback
+        return traceback.format_exc()
     finally:
         db.session.remove()
 
@@ -143,6 +149,9 @@ def get_scheme(id):
         elif request.method == 'DELETE':
             db.session.delete(s)
             db.session.commit()
+    except:
+        import traceback
+        return traceback.format_exc()
     finally:
         db.session.remove()
 
@@ -187,6 +196,9 @@ def evaluate(id):
         else:
             raise exceptions.NotFound()
         return 'True'
+    except:
+        import traceback
+        return traceback.format_exc()
     finally:
         db.session.remove()
 
@@ -218,7 +230,10 @@ def learn(id):
         else:
             raise exceptions.NotFound()
         return 'True'
-
+    
+    except:
+        import traceback
+        return traceback.format_exc()
     finally:
         db.session.remove()
 
@@ -244,7 +259,10 @@ def recommend(id):
         else:
             raise exceptions.NotFound()
         return 'True'
-
+    
+    except:
+        import traceback
+        return traceback.format_exc()
     finally:
         db.session.remove()
     
@@ -260,7 +278,10 @@ def perform_recommendation_operation(id,stock):
         if state == stock_state.close_position:
             del s.recommend_stocks[stock]
         db.session.commit()
-
+        
+    except:
+        import traceback
+        return traceback.format_exc()
     finally:
         db.session.remove()
 
@@ -273,6 +294,9 @@ def get_recommendation_on_date(id,date):
         if s == None:
             return 'null'
         return [ r.to_dict() for r in s.recommend_stocks if r.recommendation_operation_date == date ]
+    except:
+        import traceback
+        return traceback.format_exc()
     finally:
         db.session.remove()
 
