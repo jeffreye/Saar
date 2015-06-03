@@ -87,7 +87,11 @@ def shutdown_server():
 @app.route('/')
 def hello():
     """Renders a sample page."""
-    return 'Welcome to voystock'
+    try:
+        last_commit = os.popen("git rev-parse HEAD").read()
+        return last_commit
+    except:
+        return 'Welcome to voystock'
 
 @requires_auth
 @app.route('/indicators')
