@@ -140,7 +140,7 @@ class scheme(Model):
         self.tolerant_days = dict['TolerantDays']
         self.indicator_combinator = dict['CombinationType']
 
-        self.start_evaluation = dict['StartEvaluation']
+        #self.start_evaluation = dict['StartEvaluation']
         import dateutil.parser
         self.evaluation_start = dateutil.parser.parse(dict['EvaluationStartTime']).date()
         self.evaluation_end = dateutil.parser.parse(dict['EvaluationEndTime']).date()
@@ -152,10 +152,10 @@ class scheme(Model):
 
         self.stocks_code = [ stock(x['Code'],x['Name']) for x in dict['EvaluationStocks']]
             
-        self.start_learning = dict['StartLearning']
-        self.learning_done = dict['LearningDone']
+        #self.start_learning = dict['StartLearning']
+        #self.learning_done = dict['LearningDone']
 
-        self.enable_recommendation = dict['EnableRecommendation']
+        #self.enable_recommendation = dict['EnableRecommendation']
 
     def to_dict(self):
         return {
