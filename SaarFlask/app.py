@@ -124,14 +124,15 @@ def modify_scheme():
         if request.method == 'GET':
             return 'hello'
         schemeData = request.data
-        s = db.session.query(scheme).filter_by(id = schemeData['ID']).first()
+        s = db.session.query(scheme).filter_by(id = schemeData['ID']).first() if 'ID' in schemeData else None
         if s == None:
             s = scheme()
             db.session.add(s)
         db.session.expunge(s)
         s.read_dict(schemeData)
-        db.session.merge(s)
+        s = db.session.merge(s)
         db.session.commit()
+        
         return str(s.id)
     except:
         import traceback
@@ -177,12 +178,20 @@ def evaluate(id):
     try:    
         s = db.session.query(scheme).filter_by(id = id).first()    
         if s == None:
-            return 'null'
+            return {
+                'Progress':0,
+                'AnnualizedReturn': 0,
+                'WinRate':0
+                }
 
         if request.method == 'GET':
             '''get evaluation results'''
             if s.evaluation_result == None:
-                return 'null'
+                return {
+                    'Progress':0,
+                    'AnnualizedReturn': 0,
+                    'WinRate':0
+                    }
             else:
                 principal = s.total_money * len(s.stocks_code)
                 return {
@@ -214,7 +223,9 @@ def learn(id):
     try:    
         s = db.session.query(scheme).filter_by(id = id).first()    
         if s == None:
-            return 'null'
+            return { 'LearningDone' :False,
+                     'BestParameters': None
+                    }
 
         if request.method == 'GET':
             '''get learning results'''
@@ -233,7 +244,9 @@ def learn(id):
             db.session.commit()
         else:
             raise exceptions.NotFound()
-        return 'True'
+        return { 'LearningDone' :False,
+                    'BestParameters': None
+                }
     
     except:
         import traceback
@@ -248,7 +261,7 @@ def recommend(id):
     try:
         s = db.session.query(scheme).filter_by(id = id).first()    
         if s == None:
-            return 'null'
+            return []
         
         if request.method == 'GET':
             '''get recommendation results'''
@@ -262,7 +275,7 @@ def recommend(id):
             db.session.commit()
         else:
             raise exceptions.NotFound()
-        return 'True'
+        return []
     
     except:
         import traceback
@@ -296,7 +309,7 @@ def get_recommendation_on_date(id,date):
     try:
         s = db.session.query(scheme).filter_by(id = id).first()    
         if s == None:
-            return 'null'
+            return []
         return [ r.to_dict() for r in s.recommend_stocks if r.recommendation_operation_date == date ]
     except:
         import traceback

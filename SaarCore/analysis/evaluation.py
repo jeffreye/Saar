@@ -12,7 +12,7 @@ from data.evaluation import evaluation_result
 class evaluator(object):
     """evaluator of scheme"""
 
-    def __init__(self,scheme, log = False):
+    def __init__(self,scheme, session_commit = None, log = False):
         assert scheme.evaluation_end > scheme.evaluation_start
         self.scheme = scheme
         self.from_date = scheme.evaluation_start
@@ -32,6 +32,8 @@ class evaluator(object):
 
         self.log = log
 
+        self.session_commit = session_commit
+
 
     def calculate(self):
         '''calculate scheme's win rate'''
@@ -39,6 +41,8 @@ class evaluator(object):
         self.scheme.start_evaluation = True
         
         self.scheme.evaluation_result = evaluation_result(scheme_id = self.scheme.id,progress = 0,money = 0,win_rate = 0)
+        if self.session_commit != None:
+            self.session_commit()
         with open('evaluation%s.csv' % self.scheme.name, 'w+') as self.csvfile:
             self.writer = csv.DictWriter(self.csvfile,delimiter=',',fieldnames = ['date','operation','code','price','numbers','money_remains'])
             self.writer.writeheader()
@@ -46,6 +50,8 @@ class evaluator(object):
             for i,stock in enumerate(self.scheme.stocks):
                 self.stock_profit_count[stock], self.stock_loss_count[stock],self.money_remains[stock] = self.manipulate_stock(stock)
                 self.scheme.evaluation_result.progress = i/len(self.scheme.stocks)
+                if self.session_commit != None:
+                    self.session_commit()
            
         profits = sum(self.stock_profit_count.values())
         losses = sum(self.stock_loss_count.values())
@@ -55,6 +61,8 @@ class evaluator(object):
         self.scheme.evaluation_result.money = sum(self.money_remains.values())
         self.scheme.evaluation_result.win_rate = profit_rate
         self.scheme.start_evaluation = False
+        if self.session_commit != None:
+            self.session_commit()
 
         return profit_rate,sum(self.money_remains.values())
 
@@ -220,8 +228,8 @@ class evaluator(object):
 class parallel_evaluator(evaluator):
     """description of class"""
 
-    def __init__(self, scheme,log = False):
-        super().__init__(scheme, log)
+    def __init__(self, scheme, session_commit = None,log = False):
+        super().__init__(scheme,session_commit, log)
         self.counter_lock = threading.Lock()
 
     
@@ -237,9 +245,13 @@ class parallel_evaluator(evaluator):
             threads.append(t)
            
         self.scheme.evaluation_result = evaluation_result(scheme_id = self.scheme.id,progress = 0,money = 0,win_rate = 0)
+        if self.session_commit != None:
+            self.session_commit()
         for i,t in enumerate(threads):
             t.join()
             self.scheme.evaluation_result.progress = i/len(threads)
+            if self.session_commit != None:
+                self.session_commit()
 
         profits = sum(self.stock_profit_count.values())
         losses = sum(self.stock_loss_count.values())
@@ -250,6 +262,9 @@ class parallel_evaluator(evaluator):
         self.scheme.evaluation_result.money = sum(self.money_remains.values())
         self.scheme.evaluation_result.win_rate = profit_rate
         self.scheme.start_evaluation = False
+        
+        if self.session_commit != None:
+            self.session_commit()
 
         return profit_rate,sum(self.money_remains.values())
 

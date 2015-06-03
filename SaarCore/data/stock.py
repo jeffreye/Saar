@@ -131,6 +131,8 @@ class stock(Model):
         except:            
             import sys
             print("Unexpected error ( %s ) when retrieving stocks:%s" % (str(sys.exc_info()[1]),self.code))
+            import traceback
+            print(traceback.format_exc())
             return False
         else:
             self.prices.sort(inplace = True)

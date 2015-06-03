@@ -33,7 +33,7 @@ class scheme(Model):
     indicator_combinator = Column(Integer,nullable = False,default = 1 )
 
     #evaluation    
-    stocks_code = relationship(stock,secondary=stock_tracking,backref ='stocks_code', lazy='joined')
+    stocks_code = relationship(stock,secondary=stock_tracking,backref ='stocks_code', lazy='joined',cascade="save-update, merge, expunge")
     start_evaluation = Column(Boolean, nullable=False)
     evaluation_start = Column(Date, nullable=False,default =  date(2005,6,6))
     evaluation_end = Column(Date, nullable=False,default =  date(2013,6,27))
