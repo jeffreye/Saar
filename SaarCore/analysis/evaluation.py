@@ -21,12 +21,12 @@ class evaluator(object):
         self.prefetch_days = 100
         '''fetech more dates to calculate indicators'''
 
-        self.money_remains = {}
+        self.money_remains = 0
         '''money in pocket for every stock'''
 
-        self.stock_profit_count = {}
+        self.stock_profit_count = 0
 
-        self.stock_loss_count = {}
+        self.stock_loss_count = 0
 
         self.indicator = self.scheme.combine_indicators()
 
@@ -34,37 +34,43 @@ class evaluator(object):
 
         self.session_commit = session_commit
 
+    def set_listener(self,on_start,on_manipulated,on_done):
+        self.on_start = on_start
+        self.on_manipulated = on_manipulated
+        self.on_done = on_done
+
 
     def calculate(self):
         '''calculate scheme's win rate'''
         #buy and sell simulatively(range:all stocks)
-        self.scheme.start_evaluation = True
-        
         self.scheme.evaluation_result = evaluation_result(scheme_id = self.scheme.id,progress = 0,money = 0,win_rate = 0)
-        if self.session_commit != None:
-            self.session_commit()
+        if self.on_start != None:
+            self.on_start(self.scheme.evaluation_result)
         with open('evaluation%s.csv' % self.scheme.name, 'w+') as self.csvfile:
             self.writer = csv.DictWriter(self.csvfile,delimiter=',',fieldnames = ['date','operation','code','price','numbers','money_remains'])
             self.writer.writeheader()
             self.csvfile.flush()
             for i,stock in enumerate(self.scheme.stocks):
-                self.stock_profit_count[stock], self.stock_loss_count[stock],self.money_remains[stock] = self.manipulate_stock(stock)
-                self.scheme.evaluation_result.progress = i/len(self.scheme.stocks)
-                if self.session_commit != None:
-                    self.session_commit()
-           
-        profits = sum(self.stock_profit_count.values())
-        losses = sum(self.stock_loss_count.values())
-        profit_rate = 0 if (profits + losses) == 0 else profits / (profits + losses)
+                profit,loss,money = self.manipulate_stock(stock)
+                self.stock_profit_count += profit
+                self.stock_loss_count += loss
+                self.money_remains += money
 
-        self.scheme.evaluation_result.progress = 1
-        self.scheme.evaluation_result.money = sum(self.money_remains.values())
-        self.scheme.evaluation_result.win_rate = profit_rate
+                self.scheme.evaluation_result.progress = (i+1)/len(threads)
+                profit_rate = 0 if (self.stock_profit_count + self.stock_loss_count) == 0 else self.stock_profit_count / (self.stock_profit_count + self.stock_loss_count)
+                self.scheme.evaluation_result.money = self.money_remains
+                self.scheme.evaluation_result.money_used = self.scheme.total_money * (i + 1)
+                self.scheme.evaluation_result.win_rate = profit_rate
+
+                if self.on_manipulated != None:
+                    self.on_manipulated(self.scheme.evaluation_result)
+
+
         self.scheme.start_evaluation = False
-        if self.session_commit != None:
-            self.session_commit()
+        if self.on_done != None:
+            self.on_done(self.scheme.evaluation_result)
 
-        return profit_rate,sum(self.money_remains.values())
+        return profit_rate,self.money_remains
 
     def manipulate_stock(self,stock):
         #prepare data
@@ -236,7 +242,6 @@ class parallel_evaluator(evaluator):
     def calculate(self):
         '''calculate scheme's win rate'''
         #buy and sell simulatively(range:all stocks)
-        self.scheme.start_evaluation = True
         threads = []
 
         for stock in self.scheme.stocks:
@@ -244,27 +249,27 @@ class parallel_evaluator(evaluator):
             t.start()
             threads.append(t)
            
-        self.scheme.evaluation_result = evaluation_result(scheme_id = self.scheme.id,progress = 0,money = 0,win_rate = 0)
-        if self.session_commit != None:
-            self.session_commit()
+        self.scheme.evaluation_result = evaluation_result(scheme_id = self.scheme.id,progress = 0,money = 0,money_used = 0,win_rate = 0)
+        if self.on_start != None:
+            self.on_start(self.scheme.evaluation_result)
         for i,t in enumerate(threads):
             t.join()
-            self.scheme.evaluation_result.progress = i/len(threads)
-            if self.session_commit != None:
-                self.session_commit()
 
-        profits = sum(self.stock_profit_count.values())
-        losses = sum(self.stock_loss_count.values())
-        profit_rate = 0 if (profits + losses) == 0 else profits / (profits + losses)
+            self.scheme.evaluation_result.progress = (i+1)/len(threads)
+            profit_rate = 0 if (self.stock_profit_count + self.stock_loss_count) == 0 else self.stock_profit_count / (self.stock_profit_count + self.stock_loss_count)
+            self.scheme.evaluation_result.money = self.money_remains
+            self.scheme.evaluation_result.money_used = self.scheme.total_money * (i + 1)
+            self.scheme.evaluation_result.win_rate = profit_rate
 
-        
-        self.scheme.evaluation_result.progress = 1
-        self.scheme.evaluation_result.money = sum(self.money_remains.values())
-        self.scheme.evaluation_result.win_rate = profit_rate
+            if self.on_manipulated != None:
+                self.on_manipulated(self.scheme.evaluation_result)
+
+
         self.scheme.start_evaluation = False
-        
-        if self.session_commit != None:
-            self.session_commit()
+        if self.on_done != None:
+            self.on_done(self.scheme.evaluation_result)
+
+        return profit_rate,self.money_remains
 
         return profit_rate,sum(self.money_remains.values())
 
@@ -273,5 +278,7 @@ class parallel_evaluator(evaluator):
         profit,loss,money = self.manipulate_stock(stock)
 
         self.counter_lock.acquire()
-        self.stock_profit_count[stock], self.stock_loss_count[stock],self.money_remains[stock] = profit,loss,money
+        self.stock_profit_count += profit
+        self.stock_loss_count += loss
+        self.money_remains += money
         self.counter_lock.release()

@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import datetime
 from data.stock import stock
 from data.indicator import *
 from data.sql import *
@@ -93,6 +93,8 @@ class scheme(Model):
     @reconstructor
     def init_on_load(self):    
         self.__indicators__ = []
+        self.evaluation_start = datetime.combine(self.evaluation_start, datetime.min.time())
+        self.evaluation_end = datetime.combine(self.evaluation_end, datetime.min.time())
 
     @property
     def indicators(self):
@@ -144,8 +146,8 @@ class scheme(Model):
 
         #self.start_evaluation = dict['StartEvaluation']
         import dateutil.parser
-        self.evaluation_start = dateutil.parser.parse(dict['EvaluationStartTime']).date()
-        self.evaluation_end = dateutil.parser.parse(dict['EvaluationEndTime']).date()
+        self.evaluation_start = dateutil.parser.parse(dict['EvaluationStartTime'])
+        self.evaluation_end = dateutil.parser.parse(dict['EvaluationEndTime'])
         indicator_parameters = {}
         for p in dict['EvaluationIndicators']:
             indicator_parameters[p['Name']] = p

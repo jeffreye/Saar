@@ -1,6 +1,6 @@
 *.pyc
 *.pyperf
 /SaarFlask/bin
-/SaarFlask/obj/Debug
-/SaarCore/learning_progres.csv
-/.vs/Saar/v14/.suo
+/SaarFlask/obj
+*.csv
+*.suo

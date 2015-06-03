@@ -15,12 +15,10 @@ def get_start_file(operation,scheme_id):
     return py_proc % (Path(proj_dir,core_base_dir,core_file),operation,scheme_id)
 
 import sys
-print(proj_dir)
 sys.path.append(str(Path(proj_dir,core_base_dir))+ os.sep)
 
 from flask import Flask,request, Response
 from auth import requires_auth
-from datetime import date
 from DateConverter import DateConverter
 from flask_sqlalchemy import SQLAlchemy
 from data.scheme import scheme
@@ -193,14 +191,16 @@ def evaluate(id):
                     'WinRate':0
                     }
             else:
-                principal = s.total_money * len(s.stocks_code)
+                principal = s.evaluation_result.money_used
                 return {
                     'Progress':s.evaluation_result.progress,
-                    'AnnualizedReturn': (s.evaluation_result.money - principal )/principal / (( s.evaluation_end - s.evaluation_start ).days / 365),
+                    'AnnualizedReturn': (s.evaluation_result.money - principal )/max(1,principal) / (( s.evaluation_end - s.evaluation_start ).days / 365),
                     'WinRate':s.evaluation_result.win_rate
                     }
         elif request.method == 'PUT':
-            '''start evaluation and run proc'''
+            '''start evaluation and run proc'''            
+            s.start_evaluation = True
+            db.session.commit()
             start_action(actions.evaluate_scheme,s)
         elif request.method == 'DELETE':
             '''stop evaluation'''
@@ -208,7 +208,11 @@ def evaluate(id):
             db.session.commit()
         else:
             raise exceptions.NotFound()
-        return 'True'
+        return {
+            'Progress':0,
+            'AnnualizedReturn': 0,
+            'WinRate':0
+            }
     except:
         import traceback
         return traceback.format_exc()

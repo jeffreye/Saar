@@ -2,6 +2,7 @@ from datetime import datetime,timedelta
 from threading import Semaphore,local
 from data.sql import *
 from enum import IntEnum
+from os.path import isfile,isdir
 
 
 class stock_state(IntEnum):
@@ -23,6 +24,11 @@ historical_price_directory = 'hist'
 csv_ext = '.csv'
 google_historical_price_page = 'http://www.google.com/finance/historical?q={0}&startdate={1}&enddate={2}&num=200&start={3}';
 
+if not isdir(historical_price_directory):
+    from os import mkdir
+    mkdir(historical_price_directory)
+
+
 def get_csv_path(symbol):
     from os.path import join
     return join(historical_price_directory,symbol.replace(':','-')+csv_ext)
@@ -41,7 +47,6 @@ def retrieve_stock(symbol,from_date,to_date):
     import pandas   
     from pandas.io.data import DataReader
     from math import ceil
-    from os.path import isfile
 
     #try read it from local file
     csv_path = get_csv_path(symbol)

@@ -1,5 +1,9 @@
 from app import db
 
+def merge_commit(result):
+    db.session.merge(result)
+    db.session.commit()
+
 def analyse(sc):
     '''
     Collect stock data and analyse them.(This always run after market is closed)
@@ -24,6 +28,7 @@ def evaluate_scheme(sc):
         raise NameError('scheme %s is not found.' % scheme_id)
     from analysis.evaluation import evaluator,parallel_evaluator
     e = parallel_evaluator(sc)
+    e.set_listener(merge_commit,merge_commit,merge_commit) 
     rate,money = e.calculate()
 
     db.session.merge(sc)
