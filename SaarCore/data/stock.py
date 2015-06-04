@@ -60,6 +60,10 @@ def retrieve_stock(symbol,from_date,to_date):
                 data.index = pandas.to_datetime(data.index)
                 if data.index.min() <= from_date and to_date <= data.index.max():
                     return data[data.Volume != 0]
+                else:
+                    #request more data ( not incremental)
+                    from_date = min(data.index.min(),from_date)
+                    to_date = max(data.index.max(),to_date)
 
     #Fetch from yahoo finance or google finance
     with network_pool:
@@ -79,7 +83,8 @@ def retrieve_stock(symbol,from_date,to_date):
                         data.rename(columns = { 0:'Date',1:'Open' ,2: 'High', 3:  'Low',4:  'Close',5:'Volume'},inplace = True)
                     else:
                         data.rename(columns = { 0:'Date',1:'Close'},inplace = True)
-                    data = data[data.Volume != '-']
+                    data = data[data.Volume !='0']
+                    data = data[data.Volume !='-']
                     data.set_index('Date',inplace = True)
                     data = data.ix[1:]
                     data.index = pandas.to_datetime(data.index)
@@ -89,6 +94,7 @@ def retrieve_stock(symbol,from_date,to_date):
     prices = prices[prices.Volume != 0]
     prices.to_csv(csv_path,index_label = 'Date')
     return prices
+
 class stock(Model):
     """base model of stock"""
     __tablename__ = 'stock'

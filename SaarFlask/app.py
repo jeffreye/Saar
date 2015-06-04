@@ -22,7 +22,7 @@ from auth import requires_auth
 from DateConverter import DateConverter
 from flask_sqlalchemy import SQLAlchemy
 from data.scheme import scheme
-from data import Model
+from data.sql import *
 from flask.ext.api import FlaskAPI, status, exceptions
 
 app = FlaskAPI(__name__) # Browsable Web APIs for Flask
@@ -166,6 +166,7 @@ def get_all_scheme():
 
 
 def start_action(operation,scheme):
+    #sql object cannot be used at other thread
     db.session.expunge(scheme)
     from threading import Thread
     Thread(target = operation,args = (scheme,)).start()
@@ -199,8 +200,6 @@ def evaluate(id):
                     }
         elif request.method == 'PUT':
             '''start evaluation and run proc'''            
-            s.start_evaluation = True
-            db.session.commit()
             start_action(actions.evaluate_scheme,s)
         elif request.method == 'DELETE':
             '''stop evaluation'''
