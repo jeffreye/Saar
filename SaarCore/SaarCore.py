@@ -11,12 +11,16 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm.scoping import scoped_session
 
 import os
-engine = create_engine('sqlite:///%s/../voystock.db' % os.getcwd())
+engine = create_engine('sqlite:///../voystock.db')
 Model.metadata.bind = engine
 Model.metadata.create_all(engine)
 
-DBSession = scoped_session(sessionmaker(bind = engine))
+DBSession = sessionmaker(bind = engine,expire_on_commit=False)
 session = DBSession()
+
+def merge_commit(result):
+    session.merge(result)
+    session.commit()
 
 def analyse(scheme_id):
     '''
@@ -27,6 +31,7 @@ def analyse(scheme_id):
     if today().weekday() >= 5:
         print('today is not business day')
         return
+
     sc = session.query(scheme).filter_by(id = scheme_id).first()
     if sc == None:
         raise NameError('scheme %s is not found.' % scheme_id)
@@ -34,17 +39,19 @@ def analyse(scheme_id):
     for s in r.get_daliy_stocks():
         pass
     session.commit()
+    print('recommendation done')
 
 def evaluate_scheme(scheme_id):
     from analysis.evaluation import evaluator,parallel_evaluator
     sc = session.query(scheme).filter_by(id = scheme_id).first()
     if sc == None:
         raise NameError('scheme %s is not found.' % scheme_id)
-    #session.expunge(sc)
+
     e = parallel_evaluator(sc)
+    e.set_listener(merge_commit,merge_commit,merge_commit) 
     rate,money = e.calculate()
-    #session.merge(sc)
     session.commit()
+    print('evaluation done')
 
 def search_best_parameters(scheme_id):
     from analysis.learning_machine import learning_machine
@@ -56,6 +63,7 @@ def search_best_parameters(scheme_id):
     results = e.calculate_top_10_solutions()
     session.merge(sc)
     session.commit()
+    print('learning done')
     
 
 def test():

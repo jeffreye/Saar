@@ -69,6 +69,7 @@ def retrieve_stock(symbol,from_date,to_date):
     with network_pool:
         try:
             prices = DataReader(convert_to_yahoo_symbol(symbol),'yahoo',start = from_date,end = to_date)
+            prices = prices[prices.Volume != 0]
         except:
             # Cannot fetch from yahoo finance
             prices = pandas.DataFrame()
@@ -81,17 +82,16 @@ def retrieve_stock(symbol,from_date,to_date):
                     data = raw[-1]
                     if len(data.keys()) >= 6:
                         data.rename(columns = { 0:'Date',1:'Open' ,2: 'High', 3:  'Low',4:  'Close',5:'Volume'},inplace = True)
+                        data = data[data.Volume !='0']
+                        data = data[data.Volume !='-']
                     else:
                         data.rename(columns = { 0:'Date',1:'Close'},inplace = True)
-                    data = data[data.Volume !='0']
-                    data = data[data.Volume !='-']
                     data.set_index('Date',inplace = True)
                     data = data.ix[1:]
                     data.index = pandas.to_datetime(data.index)
                     prices = prices.append(data.astype('float'))
                     
     #save to local
-    prices = prices[prices.Volume != 0]
     prices.to_csv(csv_path,index_label = 'Date')
     return prices
 

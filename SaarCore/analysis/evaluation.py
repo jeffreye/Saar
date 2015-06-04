@@ -32,7 +32,7 @@ class evaluator(object):
 
         self.log = log
 
-        self.session_commit = session_commit
+        self.set_listener(None,None,None)
 
     def set_listener(self,on_start,on_manipulated,on_done):
         self.on_start = on_start
@@ -252,9 +252,9 @@ class parallel_evaluator(evaluator):
         self.scheme.evaluation_result = evaluation_result(scheme_id = self.scheme.id,progress = 0,money = 0,money_used = 0,win_rate = 0)
         if self.on_start != None:
             self.on_start(self.scheme.evaluation_result)
+
         for i,t in enumerate(threads):
             t.join()
-
             self.scheme.evaluation_result.progress = (i+1)/len(threads)
             profit_rate = 0 if (self.stock_profit_count + self.stock_loss_count) == 0 else self.stock_profit_count / (self.stock_profit_count + self.stock_loss_count)
             self.scheme.evaluation_result.money = self.money_remains

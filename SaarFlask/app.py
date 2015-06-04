@@ -30,9 +30,10 @@ app = FlaskAPI(__name__) # Browsable Web APIs for Flask
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///../voystock.db'
 app.url_map.converters['datetime'] = DateConverter
 
-db = SQLAlchemy(app)
+db = SQLAlchemy(app,session_options = { 'expire_on_commit':False })
 
-import actions
+#import actions
+import SaarCore as actions
 
 # Make the WSGI interface available at the top level so wfastcgi can get it.
 wsgi_app = app.wsgi_app
@@ -152,6 +153,7 @@ def get_scheme(id):
         elif request.method == 'DELETE':
             db.session.delete(s)
             db.session.commit()
+            return 'null'
     except:
         import traceback
         return traceback.format_exc()
@@ -168,8 +170,8 @@ def get_all_scheme():
 def start_action(operation,scheme):
     #sql object cannot be used at other thread
     db.session.expunge(scheme)
-    from threading import Thread
-    Thread(target = operation,args = (scheme,)).start()
+    from multiprocessing import Process
+    Process(target = operation,args = (scheme.id,)).start()
 
 @requires_auth
 @app.route('/evaluation/<string:id>',methods = ['GET','PUT','DELTE'])
