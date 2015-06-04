@@ -9,6 +9,7 @@ from data import Model
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm.scoping import scoped_session
+from pandas import bdate_range, to_datetime
 
 import os
 engine = create_engine('sqlite:///../voystock.db')
@@ -28,28 +29,60 @@ def analyse(scheme_id):
     This is core of recemmendation module.
     '''
     from analysis.recommendator import recommendator, today
-    if today().weekday() >= 5:
-        print('today is not business day')
-        return
+    d = today()
+    if datetime.now().hour <= 15:
+        d = d - BDay(1)
+    elif d.weekday() >= 5:
+        d = d - BDay(1)
 
     sc = session.query(scheme).filter_by(id = scheme_id).first()
     if sc == None:
-        raise NameError('scheme %s is not found.' % scheme_id)
+        print('scheme %s is not found.' % scheme_id)
+        return
+
+    last = datetime.combine(sc.last_run_date,datetime.min.time())
+    if last >= d:
+        return
+
     r = recommendator(sc)
-    for s in r.get_daliy_stocks():
+    session.expunge(sc)
+    for s in r.get_daliy_stocks(d):
         pass
+    
+    session.merge(sc)
+    session.commit()
+    print('recommendation done')
+
+def analyse_mutiple_days(scheme_id,start,end):
+    '''
+    Collect stock data and analyse them.(This always run after market is closed)
+    This is core of recemmendation module.
+    '''
+    from analysis.recommendator import recommendator
+
+    sc = session.query(scheme).filter_by(id = scheme_id).first()
+    if sc == None:
+        print('scheme %s is not found.' % scheme_id)
+        return
+
+    r = recommendator(sc)
+    for day in bdate_range(start,end):
+        for s in r.get_daliy_stocks(day):
+            pass
     session.commit()
     print('recommendation done')
 
 def evaluate_scheme(scheme_id):
-    from analysis.evaluation import evaluator,parallel_evaluator
     sc = session.query(scheme).filter_by(id = scheme_id).first()
     if sc == None:
-        raise NameError('scheme %s is not found.' % scheme_id)
+        print('scheme %s is not found.' % scheme_id)
+        return
 
+    from analysis.evaluation import evaluator,parallel_evaluator
     e = parallel_evaluator(sc)
     e.set_listener(merge_commit,merge_commit,merge_commit) 
     rate,money = e.calculate()
+
     session.commit()
     print('evaluation done')
 
@@ -57,7 +90,9 @@ def search_best_parameters(scheme_id):
     from analysis.learning_machine import learning_machine
     sc = session.query(scheme).filter_by(id = scheme_id).first()
     if sc == None:
-        raise NameError('scheme %s is not found.' % scheme_id)
+        print('scheme %s is not found.' % scheme_id)
+        return
+
     session.expunge(sc)
     e = learning_machine(sc)
     results = e.calculate_top_10_solutions()
@@ -110,6 +145,7 @@ def test():
 if __name__ == '__main__':
     print('working at ' + os.getcwd())
     import sys
+    sys.argv = ['','recommendation','1']
     try:
         scheme_id = int(sys.argv[2])
         if sys.argv[1] =='recommendation':

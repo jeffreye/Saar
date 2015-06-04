@@ -43,6 +43,10 @@ class evaluator(object):
     def calculate(self):
         '''calculate scheme's win rate'''
         #buy and sell simulatively(range:all stocks)
+        if len(self.scheme.indicators) == 0:
+            self.scheme.evaluation_result = evaluation_result(scheme_id = self.scheme.id,progress = 1,money = 0,win_rate = 0,money_used = 0)
+            return 0,0
+
         self.scheme.evaluation_result = evaluation_result(scheme_id = self.scheme.id,progress = 0,money = 0,win_rate = 0)
         if self.on_start != None:
             self.on_start(self.scheme.evaluation_result)
@@ -242,6 +246,11 @@ class parallel_evaluator(evaluator):
     def calculate(self):
         '''calculate scheme's win rate'''
         #buy and sell simulatively(range:all stocks)
+
+        if len(self.scheme.indicators) == 0:
+            self.scheme.evaluation_result = evaluation_result(scheme_id = self.scheme.id,progress = 1,money = 0,win_rate = 0,money_used = 0)
+            return 0,0
+
         threads = []
 
         for stock in self.scheme.stocks:

@@ -30,6 +30,7 @@ class recommendator(object):
         for t in threads:
             t.join()
 
+        self.scheme.last_run_date = max(self.scheme.last_run_date,date)
         return daliy_results
             
     def manipulate_stock_threading(self,stock,day,result_lock,results):

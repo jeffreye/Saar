@@ -167,11 +167,14 @@ def get_all_scheme():
     return [ s.to_dict() for s in db.session.query(scheme)]
 
 
-def start_action(operation,scheme):
+def start_action(operation,scheme,start = None,end = None):
     #sql object cannot be used at other thread
-    db.session.expunge(scheme)
+    #db.session.expunge(scheme)
     from multiprocessing import Process
-    Process(target = operation,args = (scheme.id,)).start()
+    if start == None and end == None:
+        Process(target = operation,args = (scheme.id,)).start()
+    else:
+        Process(target = operation,args = (scheme.id,start,end)).start()
 
 @requires_auth
 @app.route('/evaluation/<string:id>',methods = ['GET','PUT','DELTE'])
@@ -201,7 +204,9 @@ def evaluate(id):
                     'WinRate':s.evaluation_result.win_rate
                     }
         elif request.method == 'PUT':
-            '''start evaluation and run proc'''            
+            '''start evaluation and run proc'''    
+            s.start_evaluation = True
+            db.session.commit()        
             start_action(actions.evaluate_scheme,s)
         elif request.method == 'DELETE':
             '''stop evaluation'''
@@ -242,6 +247,8 @@ def learn(id):
                     }
         elif request.method == 'PUT':
             '''start learning and run proc'''
+            s.start_learning = True
+            db.session.commit()
             start_action(actions.search_best_parameters,s)
         elif request.method == 'DELETE':
             '''stop learning'''
@@ -273,7 +280,19 @@ def recommend(id):
             return [ r.to_dict() for r in s.recommend_stocks ]
         elif request.method == 'PUT':
             '''start recommendation'''
-            start_action(actions.analyse,s)
+            if len(request.data) == 2:
+                
+                import dateutil.parser
+                start = dateutil.parser.parse(request.data['StartTime'])
+                end = dateutil.parser.parse(request.data['EndTime'])
+
+                s.enable_recommendation = True
+                db.session.commit()
+                start_action(actions.analyse,s,start,end)
+            else:
+                s.enable_recommendation = True
+                db.session.commit()
+                start_action(actions.analyse,s)
         elif request.method == 'DELETE':
             '''stop recommendation'''
             s.enable_recommendation = False

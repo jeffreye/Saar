@@ -23,6 +23,8 @@ local_file_pool = Semaphore(value = 1)
 historical_price_directory = 'hist'
 csv_ext = '.csv'
 google_historical_price_page = 'http://www.google.com/finance/historical?q={0}&startdate={1}&enddate={2}&num=200&start={3}';
+google_daliy_price_page = 'http://www.google.com.hk/finance?q={0}'
+yahoo_daliy_price_page = 'http://finance.yahoo.com/q?s={0}'
 
 if not isdir(historical_price_directory):
     from os import mkdir
@@ -67,8 +69,9 @@ def retrieve_stock(symbol,from_date,to_date):
 
     #Fetch from yahoo finance or google finance
     with network_pool:
+        yahoo_sym = convert_to_yahoo_symbol(symbol).lower()
         try:
-            prices = DataReader(convert_to_yahoo_symbol(symbol),'yahoo',start = from_date,end = to_date)
+            prices = DataReader(yahoo_sym,'yahoo',start = from_date,end = to_date)
             prices = prices[prices.Volume != 0]
         except:
             # Cannot fetch from yahoo finance
@@ -91,6 +94,37 @@ def retrieve_stock(symbol,from_date,to_date):
                     data.index = pandas.to_datetime(data.index)
                     prices = prices.append(data.astype('float'))
                     
+        if to_date.date() == datetime.today().date():
+            import urllib.request
+            from bs4 import BeautifulSoup
+            try:
+                html = urllib.request.urlopen(yahoo_daliy_price_page.format(yahoo_sym)).read()
+                soup = BeautifulSoup(html)
+                if soup.title.string.lower().startswith(yahoo_sym):
+                    span = soup.find(attrs = {'class':'time_rtq_ticker'})
+                    if span != None:
+                        close = float(span.contents[0].string.replace(',',''))
+                        if len(prices.columns) == 6:
+                            open,high,low,vol = 0,0,0,0
+
+                            for elem in soup.find_all(attrs = {'class':'yfnc_tabledata1'}):
+                                if elem.previous.startswith('Open'):
+                                    open = float(elem.contents[0].string.replace(',',''))
+                                elif elem.previous.startswith('Day'): #Day's Range
+                                    low = float(elem.contents[0].string.replace(',',''))
+                                    high = float(elem.contents[2].string.replace(',',''))
+                                elif elem.previous.startswith('Volume'):
+                                    vol = float(elem.contents[0].string.replace(',',''))
+
+                            prices.ix[to_date] = open,high,low,close,vol,0
+                        else:
+                            prices.ix[to_date] = close
+            except:
+                import traceback
+                traceback.print_exc()
+                pass
+
+
     #save to local
     prices.to_csv(csv_path,index_label = 'Date')
     return prices

@@ -134,6 +134,8 @@ class indicator_parameter(Model):
                 'Parameters':self.params
                }
 
-   def read_dict(self,dict):
-       for index, value in enumerate(dict['Parameters']):
-           self.params[index] = value
+   def from_dict(dict):
+       result = indicator_parameter()
+       result.description_id = dict['Name']
+       result.params = dict['Parameters']
+       return result

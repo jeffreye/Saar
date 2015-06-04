@@ -10,7 +10,6 @@ def analyse(scheme_id):
     Collect stock data and analyse them.(This always run after market is closed)
     This is core of recemmendation module.
     '''
-
     from analysis.recommendator import recommendator, today
     if today().weekday() >= 5:
         print('today is not business day')
@@ -26,6 +25,24 @@ def analyse(scheme_id):
 
     db.session.commit()
     print('recommendation done')
+    
+def analyse_mutiple_days(scheme_id,start,end):
+    '''
+    Collect stock data and analyse them.(This always run after market is closed)
+    This is core of recemmendation module.
+    '''
+    from analysis.recommendator import recommendator
+
+    sc = session.query(scheme).filter_by(id = scheme_id).first()
+    if sc == None:
+        raise NameError('scheme %s is not found.' % scheme_id)
+
+    r = recommendator(sc)
+    for day in bdate_range(start,end):
+        for s in r.get_daliy_stocks(day):
+            pass
+    session.commit()
+    print('recommendation done')
 
 def evaluate_scheme(scheme_id):
     sc = db.session.query(scheme).filter_by(id = scheme_id).first()
@@ -37,7 +54,6 @@ def evaluate_scheme(scheme_id):
     e.set_listener(merge_commit,merge_commit,merge_commit) 
     rate,money = e.calculate()
 
-    db.session.merge(sc)
     db.session.commit()
     print('evaluation done')
 

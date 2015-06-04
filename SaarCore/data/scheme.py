@@ -47,8 +47,10 @@ class scheme(Model):
     
     #recommendation
     enable_recommendation = Column(Boolean, nullable=False)
+    last_run_date = Column(Date, nullable = False,default = datetime.min)
     recommend_stocks = relationship(recommendation,
                                     collection_class = attribute_mapped_collection('stock_code'),
+                                    lazy='joined',
                                     cascade="all, delete-orphan")
 
 
@@ -148,11 +150,9 @@ class scheme(Model):
         import dateutil.parser
         self.evaluation_start = dateutil.parser.parse(dict['EvaluationStartTime'])
         self.evaluation_end = dateutil.parser.parse(dict['EvaluationEndTime'])
-        indicator_parameters = {}
+        self.evaluation_parameters.clear()
         for p in dict['EvaluationIndicators']:
-            indicator_parameters[p['Name']] = p
-        for p in self.evaluation_parameters:
-            p.read_dict(indicator_parameters[p.description_id])
+            self.evaluation_parameters.append(indicator_parameter.from_dict(p))
 
         self.stocks_code = [ stock(x['Code'],x['Name']) for x in dict['EvaluationStocks']]
             
