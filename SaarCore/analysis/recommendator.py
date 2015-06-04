@@ -7,24 +7,36 @@ import threading
 class recommendator(object):
     """recommendator of stocks"""
 
-    def __init__(self,scheme, log = False):
+    def __init__(self,scheme,debug_stocks = None, log = False):
         self.scheme = scheme
         self.prefetch_days = 100
         self.indicator = self.scheme.combine_indicators()
+        
         self.log = log
+        self.debug_stocks = debug_stocks
 
     def get_daliy_stocks(self, date = today()):
         '''recommend stocks base on user's scheme'''
-
+        
+        daliy_results = []
+        result_lock = threading.Lock()
         threads = []
-        for s in all_stocks():
-            t = threading.Thread(target = self.manipulate_stock, args = (s,date), name = 'manipulate ' + s.code)
+        stocks = all_stocks() if self.debug_stocks == None else self.debug_stocks
+        for s in stocks:
+            t = threading.Thread(target = self.manipulate_stock_threading,args = (s,date,result_lock,daliy_results))
             t.start()
             threads.append(t)
-           
-        for i,t in enumerate(threads):
+
+        for t in threads:
             t.join()
+
+        return daliy_results
             
+    def manipulate_stock_threading(self,stock,day,result_lock,results):
+        if self.manipulate_stock(stock,day):
+            result_lock.acquire()
+            results.append(stock)
+            result_lock.release()
             
     def manipulate_stock(self,stock,day):
         '''Determine stock should be operated'''

@@ -89,7 +89,7 @@ class evaluator(object):
         self.indicator.precompute(stock)
             
         #monitoring stock and invest it
-        for day in bdate_range(start = self.from_date,end = self.to_date, freq = 'D'):
+        for day in bdate_range(start = self.from_date,end = self.to_date):
             if day not in stock.prices.index:
                 continue
             signal = self.indicator.get_signal(stock,day)
