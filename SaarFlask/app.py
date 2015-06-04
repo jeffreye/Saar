@@ -170,11 +170,13 @@ def get_all_scheme():
 def start_action(operation,scheme,start = None,end = None):
     #sql object cannot be used at other thread
     #db.session.expunge(scheme)
-    from multiprocessing import Process
+
+    #from multiprocessing import Process
+    from threading import Thread
     if start == None and end == None:
-        Process(target = operation,args = (scheme.id,)).start()
+        Thread(target = operation,args = (scheme.id,)).start()
     else:
-        Process(target = operation,args = (scheme.id,start,end)).start()
+        Thread(target = operation,args = (scheme.id,start,end)).start()
 
 @requires_auth
 @app.route('/evaluation/<string:id>',methods = ['GET','PUT','DELTE'])
